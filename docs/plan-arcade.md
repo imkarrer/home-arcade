@@ -314,7 +314,7 @@ Fall back to `full` (uncropped). Log a warning; no kid-facing error.
 
 | Item | Spec |
 | --- | --- |
-| Compute | Refurb 8th-gen Intel i5 mini PC — HP ProDesk 600 G4 Mini or Lenovo ThinkCentre M720q |
+| Compute | Refurb 8th-gen Intel i5 mini PC — HP ProDesk 600 G4 Mini or Lenovo ThinkCentre M720q. **iGPU only (UHD 630 class). No discrete GPU.** |
 | RAM / disk | 16 GB RAM, **512 GB SSD** |
 | Display | 22–24″ 1080p monitor, **VESA 75×75 or 100×100** |
 | Mount | VESA sandwich bracket (mini PC between stand and panel) |
@@ -376,12 +376,15 @@ Dedicated disk or partition for `/srv/arcade` — plan **500 GB+** as library gr
 | Racing | Super Mario Kart | Solo · auto multiplayer | Yes |
 | Classics | GoldenEye 007 | Solo · auto multiplayer | Yes |
 | Learning | Super Solvers (DOS) | Solo | N/A |
-| Build | Minetest | Solo · Family World | N/A (native full screen) |
+| Build | Luanti (Minetest), short view distance | Solo · Family World | N/A |
+| Build | Mindustry | Solo · hub server | N/A |
+| Logistics | OpenTTD | Solo · hub server | N/A |
 | Explore | Endless Sky | Solo | N/A |
-| Build (optional) | Factorio | Solo · hub server | N/A |
 | Classics | Bomberman, SFII, Sonic 2, … | Per-game | Add manifest when needed |
 
 All titles visible in ES-DE simultaneously. No locked rows.
+
+Research backlog (not a deploy list): [`candidates.md`](candidates.md).
 
 ---
 
