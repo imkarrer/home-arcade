@@ -1,0 +1,13 @@
+game_id: goldeneye_007
+core: mupen64plus-next
+
+layouts:
+  - when_players: 2
+    use_layout: horizontal_halves
+  - when_players: [3, 4]
+    use_layout: quadrants
+    # Calibrate from a 4P screenshot — GoldenEye letterboxes. Placeholders
+    # inherit generic quadrants until bleed is measured.
+    # region_overrides:
+    #   p1: { x: 0.05, y: 0.08, w: 0.42, h: 0.38 }
+    bleed_px: 0

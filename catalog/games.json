@@ -1,0 +1,103 @@
+{
+  "games": [
+    {
+      "id": "mario_kart_64",
+      "title": "Mario Kart 64",
+      "core": "mupen64plus_next_libretro.dll",
+      "rom": "roms/n64/mario_kart_64.z64",
+      "rom_alts": [
+        "roms/n64/Mario Kart 64.z64",
+        "roms/n64/mariokart64.z64",
+        "roms/n64/mario_kart_64.n64"
+      ]
+    },
+    {
+      "id": "super_mario_kart",
+      "title": "Super Mario Kart",
+      "core": "snes9x_libretro.dll",
+      "rom": "roms/snes/super_mario_kart.sfc",
+      "rom_alts": [
+        "roms/snes/Super Mario Kart.sfc",
+        "roms/snes/super_mario_kart.smc"
+      ]
+    },
+    {
+      "id": "ss_treasure_mountain",
+      "title": "Super Solvers: Treasure Mountain!",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "SST.EXE",
+      "rom": "roms/dos/ss_treasure_mountain/SST.EXE",
+      "rom_alts": [
+        "roms/dos/ss_treasure_mountain.dosz",
+        "roms/dos/ss_treasure_mountain/SST.EXE",
+        "roms/dos/ss_treasure_mountain/SSTM/SST.EXE"
+      ]
+    },
+    {
+      "id": "ss_midnight_rescue",
+      "title": "Super Solvers: Midnight Rescue!",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "SSR.EXE",
+      "rom": "roms/dos/ss_midnight_rescue/SSR.EXE",
+      "rom_alts": [
+        "roms/dos/ss_midnight_rescue.dosz",
+        "roms/dos/ss_midnight_rescue/SSR.EXE",
+        "roms/dos/ss_midnight_rescue/SSMR/SSR.EXE"
+      ]
+    },
+    {
+      "id": "ss_outnumbered",
+      "title": "Super Solvers: OutNumbered!",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "SSO.EXE",
+      "rom": "roms/dos/ss_outnumbered/SSO.EXE",
+      "rom_alts": [
+        "roms/dos/ss_outnumbered.dosz",
+        "roms/dos/ss_outnumbered/SSO.EXE",
+        "roms/dos/ss_outnumbered/SSOUTN/SSO.EXE"
+      ]
+    },
+    {
+      "id": "ss_gizmos_gadgets",
+      "title": "Super Solvers: Gizmos and Gadgets!",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "ssg.bat",
+      "rom": "roms/dos/ss_gizmos_gadgets/ssg.bat",
+      "rom_alts": [
+        "roms/dos/ss_gizmos_gadgets.dosz",
+        "roms/dos/ss_gizmos_gadgets/ssg.bat",
+        "roms/dos/ss_gizmos_gadgets/SSGG/ssg.bat"
+      ]
+    },
+    {
+      "id": "ss_spellbound",
+      "title": "Super Solvers: Spellbound!",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "ssbprog.exe",
+      "rom": "roms/dos/ss_spellbound/ssbprog.exe",
+      "rom_alts": [
+        "roms/dos/ss_spellbound.dosz",
+        "roms/dos/ss_spellbound/ssbprog.exe",
+        "roms/dos/ss_spellbound/SSSB/ssbprog.exe"
+      ]
+    },
+    {
+      "id": "ss_treasure_mathstorm",
+      "title": "Super Solvers: Treasure MathStorm!",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "tmprog.exe",
+      "rom": "roms/dos/ss_treasure_mathstorm/tmprog.exe",
+      "rom_alts": [
+        "roms/dos/ss_treasure_mathstorm.dosz",
+        "roms/dos/ss_treasure_mathstorm/tmprog.exe",
+        "roms/dos/ss_treasure_mathstorm/SSTMS/IAFIX.BAT"
+      ]
+    }
+  ]
+}

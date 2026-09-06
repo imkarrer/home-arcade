@@ -1,0 +1,18 @@
+# Generic split templates. Per-game manifests inherit via use_layout, then
+# optionally set region_overrides / bleed_px when a title is not a clean 50/50.
+#
+# crop-resolve merge order: use_layout → region_overrides → bleed_px.
+
+vertical_halves:
+  p1: { x: 0.0, y: 0.0, w: 0.5, h: 1.0 }
+  p2: { x: 0.5, y: 0.0, w: 0.5, h: 1.0 }
+
+horizontal_halves:
+  p1: { x: 0.0, y: 0.0, w: 1.0, h: 0.5 }
+  p2: { x: 0.0, y: 0.5, w: 1.0, h: 0.5 }
+
+quadrants:
+  p1: { x: 0.0, y: 0.0, w: 0.5, h: 0.5 }
+  p2: { x: 0.5, y: 0.0, w: 0.5, h: 0.5 }
+  p3: { x: 0.0, y: 0.5, w: 0.5, h: 0.5 }
+  p4: { x: 0.5, y: 0.5, w: 0.5, h: 0.5 }

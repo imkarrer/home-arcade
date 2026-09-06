@@ -1,0 +1,68 @@
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: #141414;
+  color: #eee;
+  font-family: "Segoe UI", sans-serif;
+}
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 28px 8px;
+}
+h1 { margin: 0; font-size: 32px; }
+nav a {
+  color: #bbb;
+  text-decoration: none;
+  margin-left: 16px;
+  font-size: 18px;
+}
+nav a.active { color: #fff; font-weight: 700; }
+main { padding: 12px 28px 40px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
+}
+.card {
+  background: #222;
+  border-radius: 16px;
+  padding: 20px;
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.card h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+.card.soon { opacity: 0.45; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+}
+button:disabled { cursor: not-allowed; }
+.play { background: #2864b4; }
+.host { background: #287046; }
+.join { background: #8c6432; }
+.save { background: #2864b4; }
+.hint { padding: 0 28px 24px; color: #888; }
+label { display: block; margin: 16px 0 6px; }
+input, select {
+  width: 100%;
+  max-width: 420px;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 0;
+  background: #2a2a2a;
+  color: #fff;
+}
+.settings-block { margin-bottom: 28px; max-width: 520px; }
+.error { color: #f88; }

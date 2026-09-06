@@ -1,0 +1,6 @@
+{
+  "hub": "192.168.1.50",
+  "share": "arcade",
+  "user": "arcade",
+  "password": "read-from-ac-box-/var/lib/arcade/secrets/smb-password"
+}

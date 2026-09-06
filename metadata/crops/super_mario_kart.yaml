@@ -1,0 +1,6 @@
+game_id: super_mario_kart
+core: snes9x
+
+layouts:
+  - when_players: 2
+    use_layout: horizontal_halves

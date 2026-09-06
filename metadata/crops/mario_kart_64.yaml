@@ -1,0 +1,8 @@
+game_id: mario_kart_64
+core: mupen64plus-next
+
+layouts:
+  - when_players: 2
+    use_layout: vertical_halves
+  - when_players: [3, 4]
+    use_layout: quadrants
