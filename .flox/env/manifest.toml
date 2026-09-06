@@ -1,0 +1,8 @@
+schema-version = "1.14.0"
+
+[install]
+git.pkg-path = "git"
+python312Full.pkg-path = "python312Full"
+
+[options]
+systems = ["x86_64-linux"]

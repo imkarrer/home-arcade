@@ -1,0 +1,21 @@
+# GitHub push/PR → this file. Queue=self on the ac-box agent.
+# Source checks only. Never recycle AC, never read /srv/arcade.
+
+agents:
+  queue: self
+
+flox_plugin: &flox
+  s3-cache-bucket: flox-binary-cache
+  s3-cache-endpoint: http://minio:9000
+  s3-cache-region: us-east-1
+  s3-cache-public-key: "flox-binary-cache-1:pSpP6x540XtBh+IMvmW8XrRHJDtIi+b31uvvIA0PyR0="
+  s3-cache-push: true
+
+steps:
+  - label: ":python: Source checks"
+    key: test
+    command: bash scripts/ci_test.sh
+    plugins:
+      - imkarrer/flox#main:
+          <<: *flox
+          command: bash scripts/ci_test.sh

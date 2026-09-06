@@ -1,0 +1,24 @@
+---
+description: Arcade stations have no discrete GPU. Only deploy light-graphics games.
+alwaysApply: true
+---
+
+# Arcade stations are iGPU-only
+
+Prod and friend stations are refurb 8th-gen Intel i5 mini PCs (UHD 630 class) driving 1080p. **No discrete GPU.** Do not add titles that need a real graphics card.
+
+## Allowed
+
+- RetroArch: SNES, GBA, Genesis, DOS, N64 at modest internal res
+- 2D natives: Mindustry, OpenTTD, shapez (FOSS), Endless Sky, Super Solvers via DOSBox
+- SuperTuxKart only at low/medium 1080p if we add it
+
+## Tune or skip
+
+- Luanti/Minetest: short view distance, no fancy shaders. Playable, not pretty.
+- Skip Veloren, Space Station 14, 0 A.D. at default, anything Unreal/Unity "recommended GPU"
+
+## Also
+
+- Free-to-play-and-host only (no Factorio-style per-seat paid clients)
+- Do not put ROMs/zips/cores in git

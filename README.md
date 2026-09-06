@@ -21,3 +21,5 @@ Copy `windows/hub.json.example` to `hub.json` on a station and fill the password
 Stations are 8th-gen i5 mini PCs with **Intel iGPU only** (no discrete GPU), 1080p. Ship 2D or light 3D only: RetroArch, DOS, Mindustry, OpenTTD, Luanti with short view distance. No Veloren / SS14 / GPU-recommended titles.
 
 `ac-host` still imports a deploy copy of `modules/arcade-hub.nix` so `nixos-rebuild` does not need this repo as a flake input yet.
+
+Push checks: [`docs/ci.md`](docs/ci.md). Source only — no ROMs, no box, no AC recycle.
