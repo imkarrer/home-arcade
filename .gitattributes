@@ -1,0 +1,10 @@
+# Normalize all text files to LF in the repository, regardless of what line
+# endings get introduced by editing from Windows vs WSL on this NTFS
+# checkout. See homelab README "Pinned conventions" for why this matters:
+# CRLF churn on every file touched from Windows was drowning real diffs.
+* text=auto eol=lf
+
+# Binary assets: never touch, never diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
