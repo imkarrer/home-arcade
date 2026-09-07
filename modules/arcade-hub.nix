@@ -94,6 +94,28 @@ in
       type = lib.types.port;
       default = 64738;
     };
+
+    freeciv.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Dedicated Freeciv server, LAN bind only. No metaserver.";
+    };
+
+    freeciv.port = lib.mkOption {
+      type = lib.types.port;
+      default = 5556;
+    };
+
+    mindustry.enable = lib.mkOption {
+      type = lib.types.bool;
+      default = false;
+      description = "Dedicated Mindustry server, LAN firewall only.";
+    };
+
+    mindustry.port = lib.mkOption {
+      type = lib.types.port;
+      default = 6567;
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -118,6 +140,10 @@ in
       "d ${cfg.dataDir}/saves 0775 arcade arcade -"
       "d ${cfg.stateDir} 0750 arcade arcade -"
       "d ${cfg.stateDir}/secrets 0700 arcade arcade -"
+      "d ${cfg.stateDir}/freeciv 0750 arcade arcade -"
+      "d ${cfg.stateDir}/mindustry 0750 arcade arcade -"
+      "d ${cfg.dataDir}/apps 0755 arcade arcade -"
+      "d ${cfg.dataDir}/apps/windows 0755 arcade arcade -"
     ];
 
     # Interface-scoped only. Never global allowedTCPPorts — those hit every NIC
@@ -129,11 +155,15 @@ in
         ++ (lib.optional cfg.lobby.enable cfg.lobby.port)
         ++ (lib.optional cfg.mitm.enable cfg.mitm.port)
         ++ (lib.optional cfg.minetest.enable cfg.minetest.port)
-        ++ (lib.optional cfg.mumble.enable cfg.mumble.port);
+        ++ (lib.optional cfg.mumble.enable cfg.mumble.port)
+        ++ (lib.optional cfg.freeciv.enable cfg.freeciv.port)
+        ++ (lib.optional cfg.mindustry.enable cfg.mindustry.port);
       allowedUDPPorts =
         (lib.optional cfg.mitm.enable cfg.mitm.port)
         ++ (lib.optional cfg.minetest.enable cfg.minetest.port)
-        ++ (lib.optional cfg.mumble.enable cfg.mumble.port);
+        ++ (lib.optional cfg.mumble.enable cfg.mumble.port)
+        ++ (lib.optional cfg.freeciv.enable cfg.freeciv.port)
+        ++ (lib.optional cfg.mindustry.enable cfg.mindustry.port);
     };
 
     services.samba = lib.mkIf cfg.smb.enable {
@@ -216,6 +246,38 @@ in
             gid = "arcade";
           };
         };
+      };
+    };
+
+    systemd.services.arcade-freeciv = lib.mkIf cfg.freeciv.enable {
+      description = "Arcade Freeciv dedicated server (LAN only)";
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        User = "arcade";
+        Group = "arcade";
+        WorkingDirectory = "${cfg.stateDir}/freeciv";
+        ExecStart = "${pkgs.freeciv}/bin/freeciv-server --bind ${cfg.lanAddress} --port ${toString cfg.freeciv.port} --saves ${cfg.stateDir}/freeciv --log ${cfg.stateDir}/freeciv/server.log";
+        Restart = "on-failure";
+        RestartSec = 5;
+      };
+    };
+
+    systemd.services.arcade-mindustry = lib.mkIf cfg.mindustry.enable {
+      description = "Arcade Mindustry dedicated server (LAN only)";
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+      wantedBy = [ "multi-user.target" ];
+      serviceConfig = {
+        User = "arcade";
+        Group = "arcade";
+        WorkingDirectory = "${cfg.stateDir}/mindustry";
+        ExecStart = "${pkgs.writeShellScript "arcade-mindustry" ''
+          printf '%s\n' "config name Arcade" "host sandbox" | exec ${pkgs.jre_headless}/bin/java -Xms256M -Xmx1G -jar ${cfg.stateDir}/mindustry/server-release.jar
+        ''}";
+        Restart = "on-failure";
+        RestartSec = 5;
       };
     };
 

@@ -27,11 +27,9 @@
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "SST.EXE",
-      "rom": "roms/dos/ss_treasure_mountain/SST.EXE",
+      "rom": "roms/dos/ss_treasure_mountain.zip",
       "rom_alts": [
-        "roms/dos/ss_treasure_mountain.dosz",
-        "roms/dos/ss_treasure_mountain/SST.EXE",
-        "roms/dos/ss_treasure_mountain/SSTM/SST.EXE"
+        "roms/dos/ss_treasure_mountain/SST.EXE"
       ]
     },
     {
@@ -40,11 +38,9 @@
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "SSR.EXE",
-      "rom": "roms/dos/ss_midnight_rescue/SSR.EXE",
+      "rom": "roms/dos/ss_midnight_rescue.zip",
       "rom_alts": [
-        "roms/dos/ss_midnight_rescue.dosz",
-        "roms/dos/ss_midnight_rescue/SSR.EXE",
-        "roms/dos/ss_midnight_rescue/SSMR/SSR.EXE"
+        "roms/dos/ss_midnight_rescue/SSR.EXE"
       ]
     },
     {
@@ -53,11 +49,9 @@
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "SSO.EXE",
-      "rom": "roms/dos/ss_outnumbered/SSO.EXE",
+      "rom": "roms/dos/ss_outnumbered.zip",
       "rom_alts": [
-        "roms/dos/ss_outnumbered.dosz",
-        "roms/dos/ss_outnumbered/SSO.EXE",
-        "roms/dos/ss_outnumbered/SSOUTN/SSO.EXE"
+        "roms/dos/ss_outnumbered/SSO.EXE"
       ]
     },
     {
@@ -66,11 +60,9 @@
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "ssg.bat",
-      "rom": "roms/dos/ss_gizmos_gadgets/ssg.bat",
+      "rom": "roms/dos/ss_gizmos_and_gadgets.zip",
       "rom_alts": [
-        "roms/dos/ss_gizmos_gadgets.dosz",
-        "roms/dos/ss_gizmos_gadgets/ssg.bat",
-        "roms/dos/ss_gizmos_gadgets/SSGG/ssg.bat"
+        "roms/dos/ss_gizmos_gadgets.zip"
       ]
     },
     {
@@ -79,12 +71,7 @@
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "ssbprog.exe",
-      "rom": "roms/dos/ss_spellbound/ssbprog.exe",
-      "rom_alts": [
-        "roms/dos/ss_spellbound.dosz",
-        "roms/dos/ss_spellbound/ssbprog.exe",
-        "roms/dos/ss_spellbound/SSSB/ssbprog.exe"
-      ]
+      "rom": "roms/dos/ss_spellbound.zip"
     },
     {
       "id": "ss_treasure_mathstorm",
@@ -92,11 +79,52 @@
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "tmprog.exe",
-      "rom": "roms/dos/ss_treasure_mathstorm/tmprog.exe",
+      "rom": "roms/dos/ss_treasure_math_storm.zip",
       "rom_alts": [
-        "roms/dos/ss_treasure_mathstorm.dosz",
-        "roms/dos/ss_treasure_mathstorm/tmprog.exe",
-        "roms/dos/ss_treasure_mathstorm/SSTMS/IAFIX.BAT"
+        "roms/dos/ss_treasure_mathstorm.zip"
+      ]
+    },
+    {
+      "id": "ss_ancient_empires",
+      "title": "Super Solvers: Ancient Empires",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "AEPROG.EXE",
+      "rom": "roms/dos/ss_ancient_empires.zip"
+    },
+    {
+      "id": "ss_operation_neptune",
+      "title": "Super Solvers: Operation Neptune",
+      "core": "dosbox_pure_libretro.dll",
+      "modes": ["solo"],
+      "boot": "ON.EXE",
+      "rom": "roms/dos/ss_operation_neptune.zip"
+    },
+    {
+      "id": "freeciv",
+      "title": "Freeciv",
+      "kind": "native",
+      "modes": ["solo"],
+      "exe": "apps/windows/freeciv/freeciv-gtk3.22.exe",
+      "args": [
+        "--autoconnect",
+        "--server",
+        "{hub}",
+        "--port",
+        "5556"
+      ]
+    },
+    {
+      "id": "mindustry",
+      "title": "Mindustry",
+      "kind": "native",
+      "modes": ["solo"],
+      "exe": "apps/windows/jre/bin/java.exe",
+      "args": [
+        "-Xms256M",
+        "-Xmx1G",
+        "-jar",
+        "{root}/apps/windows/mindustry/Mindustry.jar"
       ]
     }
   ]

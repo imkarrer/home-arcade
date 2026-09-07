@@ -59,18 +59,49 @@ function Get-ArcadeCatalog {
         if ($game.boot) { $boot = [string]$game.boot }
         if ($boots.ContainsKey($game.id) -and $boots[$game.id]) { $boot = $boots[$game.id] }
         $rom = Resolve-ArcadeContent $game $boot
+        $native = Resolve-ArcadeNative $game
+        $ready = if ($native) { $true } else { [bool]$rom }
         $modes = if ($null -eq $game.modes) { @("solo", "host", "join") } else { @($game.modes) }
         $out += [ordered]@{
             id        = [string]$game.id
             title     = [string]$game.title
             core      = [string]$game.core
+            kind      = if ($game.kind) { [string]$game.kind } else { "retroarch" }
             modes     = $modes
             boot      = $boot
-            ready     = [bool]$rom
-            readyPath = $rom
+            ready     = $ready
+            readyPath = $(if ($native) { $native } else { $rom })
         }
     }
     return $out
+}
+
+function Get-ArcadeDosZip($game) {
+    $rels = @()
+    if ($game.id) { $rels += ("roms/dos/" + $game.id + ".zip") }
+    if ($game.rom) { $rels += [string]$game.rom }
+    $rels += @($game.rom_alts)
+    foreach ($rel in $rels) {
+        if (-not $rel) { continue }
+        $full = Join-Path $root ($rel -replace "/", "\")
+        if ((Test-Path $full) -and ($full -like "*.zip")) { return $full }
+    }
+    return $null
+}
+
+function Resolve-ArcadeNative($game) {
+    if (-not $game.exe) { return $null }
+    $full = Join-Path $root ($game.exe -replace "/", "\")
+    if (Test-Path $full) { return $full }
+    return $null
+}
+
+function Get-ArcadeHubHost {
+    if (Test-Path $script:stationPath) {
+        $st = Get-Content $script:stationPath -Raw | ConvertFrom-Json
+        if ($st.hub) { return [string]$st.hub }
+    }
+    return "192.168.1.50"
 }
 
 function Resolve-ArcadeContent($game, [string]$boot) {
@@ -78,11 +109,8 @@ function Resolve-ArcadeContent($game, [string]$boot) {
         $folder = Join-Path $root ("roms\dos\" + $game.id)
         $direct = Join-Path $folder ($boot -replace "/", "\")
         if (Test-Path $direct) { return $direct }
-        $zip = Join-Path $root ("roms\dos\" + $game.id + ".zip")
-        if (-not (Test-Path $zip)) {
-            $zip = Join-Path $root ($game.rom -replace "/", "\")
-        }
-        if ((Test-Path $zip) -and ($zip -like "*.zip")) {
+        $zip = Get-ArcadeDosZip $game
+        if ($zip) {
             New-Item -ItemType Directory -Force -Path $folder | Out-Null
             Expand-Archive -LiteralPath $zip -DestinationPath $folder -Force
             if (Test-Path $direct) { return $direct }
@@ -104,8 +132,13 @@ function Get-ArcadeZipFiles([string]$gameId) {
     if (Test-Path $folder) {
         return @(Get-ChildItem -Path $folder -Recurse -File | ForEach-Object { $_.FullName.Substring($folder.Length).TrimStart("\") })
     }
-    $zip = Join-Path $root ("roms\dos\" + $gameId + ".zip")
-    if (Test-Path $zip) {
+    $game = $null
+    if (Test-Path $script:catalogPath) {
+        $cat = Get-Content $script:catalogPath -Raw | ConvertFrom-Json
+        foreach ($g in $cat.games) { if ($g.id -eq $gameId) { $game = $g; break } }
+    }
+    $zip = if ($game) { Get-ArcadeDosZip $game } else { Join-Path $root ("roms\dos\" + $gameId + ".zip") }
+    if ($zip -and (Test-Path $zip)) {
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         $z = [System.IO.Compression.ZipFile]::OpenRead($zip)
         try { return @($z.Entries | ForEach-Object { $_.FullName }) } finally { $z.Dispose() }
@@ -186,6 +219,17 @@ function Write-CropPreset($rect) {
 }
 
 function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScreen) {
+    $native = Resolve-ArcadeNative $game
+    if ($native) {
+        $hub = Get-ArcadeHubHost
+        $argList = @()
+        foreach ($a in @($game.args)) {
+            $argList += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root)
+        }
+        Start-Process -FilePath $native -WorkingDirectory (Split-Path $native) -ArgumentList $argList
+        return
+    }
+
     $boot = $null
     if ($game.boot) { $boot = [string]$game.boot }
     $rom = Resolve-ArcadeContent $game $boot

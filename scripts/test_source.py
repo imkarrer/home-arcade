@@ -55,19 +55,24 @@ class CatalogTests(unittest.TestCase):
             self.assertNotIn(gid, seen)
             seen.add(gid)
             self.assertTrue(game["title"].strip())
-            self.assertIn(game["core"], ALLOWED_CORES)
-            self.assertTrue(str(game["rom"]).startswith("roms/"))
             modes = game.get("modes")
             if modes is not None:
                 self.assertTrue(modes)
                 self.assertTrue(set(modes) <= ALLOWED_MODES)
+            if game.get("kind") == "native" or game.get("exe"):
+                self.assertTrue(game["exe"])
+                self.assertFalse(Path(game["exe"]).is_absolute())
+                continue
+            self.assertIn(game["core"], ALLOWED_CORES)
+            self.assertTrue(str(game["rom"]).startswith("roms/"))
             if game["core"] == DOS_CORE:
                 self.assertTrue(game.get("boot"), f"{gid} needs a boot file")
 
     def test_rom_paths_are_not_absolute(self):
         for game in load_catalog():
-            for key in ("rom",):
-                self.assertFalse(Path(game[key]).is_absolute())
+            if game.get("kind") == "native" or game.get("exe"):
+                continue
+            self.assertFalse(Path(game["rom"]).is_absolute())
             for alt in game.get("rom_alts") or []:
                 self.assertFalse(Path(alt).is_absolute())
                 self.assertTrue(alt.startswith("roms/"))

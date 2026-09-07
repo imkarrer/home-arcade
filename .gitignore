@@ -2,6 +2,7 @@
 roms/
 cores/
 saves/
+apps/
 **/*.zip
 **/*.7z
 **/*.rar
@@ -27,6 +28,7 @@ saves/
 *.so
 *.dylib
 *.exe
+*.jar
 
 # Secrets and station-local state
 windows/hub.json
@@ -49,3 +51,9 @@ result-*
 *.tmp
 session-crop.slangp
 _extract/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/
