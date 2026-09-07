@@ -131,6 +131,39 @@ in
     mindustry.port = lib.mkOption {
       type = lib.types.port;
       default = 6567;
+      description = ''
+        Port the server listens on. This is now actually passed to the server
+        via its `config port` console command -- previously it only opened a
+        firewall hole and the server was left on its own 6567 default, so
+        changing this option silently did nothing to the service.
+      '';
+    };
+
+    mindustry.map = lib.mkOption {
+      type = lib.types.str;
+      default = "Islands";
+      description = ''
+        Built-in map to host. The server's own help reads
+        `host [mapname] [mode]`, so the first argument is a MAP, not a mode --
+        which is why "host sandbox" failed with "No map with name 'sandbox'
+        found" and the server sat loaded but never opened a port.
+
+        Valid built-in names come from the server's `maps all` command and are
+        underscore-separated: Ancient_Caldera, Archipelago, Debris_Field,
+        Domain, Fork, Fortress, Glacier, Islands, Labyrinth, Maze, Molten_Lake,
+        Mud_Flats, Passage, Shattered, Tendrils, Triad, Veins, Wasteland.
+        Custom maps would live in ${"\${stateDir}"}/mindustry/config/maps, which is empty.
+      '';
+    };
+
+    mindustry.mode = lib.mkOption {
+      type = lib.types.enum [ "survival" "sandbox" "attack" "pvp" ];
+      default = "sandbox";
+      description = ''
+        Gamemode. sandbox has no enemy waves, which is the point for the kids'
+        arcade -- survival (the server's default when nothing is specified)
+        attacks them.
+      '';
     };
   };
 
@@ -290,7 +323,18 @@ in
         Group = "arcade";
         WorkingDirectory = "${cfg.stateDir}/mindustry";
         ExecStart = "${pkgs.writeShellScript "arcade-mindustry" ''
-          printf '%s\n' "config name Arcade" "host sandbox" | exec ${pkgs.jre_headless}/bin/java -Xms256M -Xmx1G -jar ${cfg.stateDir}/mindustry/server-release.jar
+          # Startup commands go in on stdin, one per line, exactly as if typed at
+          # the console. Passing them as argv does not work: the server joins
+          # them into a single command line, so "config name Arcade" and
+          # "host ..." became one "config" call and the host never ran.
+          #
+          # `config port` is sent explicitly because the server otherwise
+          # ignores mindustry.port entirely and sits on its built-in 6567.
+          printf '%s\n' \
+            "config name Arcade" \
+            "config port ${toString cfg.mindustry.port}" \
+            "host ${cfg.mindustry.map} ${cfg.mindustry.mode}" \
+            | exec ${pkgs.jre_headless}/bin/java -Xms256M -Xmx1G -jar ${cfg.stateDir}/mindustry/server-release.jar
         ''}";
         Restart = "on-failure";
         RestartSec = 5;
