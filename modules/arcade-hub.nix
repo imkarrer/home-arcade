@@ -19,14 +19,30 @@ in
 
     lanAddress = lib.mkOption {
       type = lib.types.str;
-      default = "192.168.1.50";
-      description = "Game/LAN address arcade services bind to. Not 0.0.0.0.";
+      description = ''
+        Game/LAN address arcade services bind to. Not 0.0.0.0.
+
+        No default on purpose: this is a host fact, not a tenant fact — on
+        ac-box it is `config.homelab.host.networks.lan.address` in the
+        platform layer. A hardcoded default here is exactly how it drifted
+        (this module and agent-hub each carried their own copy of the same
+        IP). The composing host config must set it explicitly, e.g.
+        `services.arcade-hub.lanAddress =
+        config.homelab.host.networks.lan.address;`. This module stays
+        importable standalone; it just refuses to guess a LAN address for
+        you.
+      '';
     };
 
     gameInterface = lib.mkOption {
       type = lib.types.str;
-      default = "enp8s0";
-      description = "LAN NIC. Arcade ports open on this interface only.";
+      description = ''
+        LAN NIC. Arcade ports open on this interface only.
+
+        No default for the same reason as lanAddress: it is
+        `config.homelab.host.networks.lan.interface` on the platform side,
+        owned once there and passed in, not redeclared per tenant.
+      '';
     };
 
     dataDir = lib.mkOption {
