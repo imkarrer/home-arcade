@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "home_arcade",
+  "project_id": "fdefb91e-5a7a-4e15-82de-448085a13b04"
+}
