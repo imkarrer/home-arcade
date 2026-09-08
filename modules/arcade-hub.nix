@@ -120,6 +120,23 @@ in
     freeciv.port = lib.mkOption {
       type = lib.types.port;
       default = 5556;
+      description = "TCP game port. freeciv-server binds this to lanAddress.";
+    };
+
+    freeciv.announcePort = lib.mkOption {
+      type = lib.types.port;
+      default = 4555;
+      description = ''
+        UDP LAN-announce port, which is what lets the Freeciv client's
+        "LAN servers" list find this server without anyone typing an IP --
+        the whole point on a kids' arcade LAN.
+
+        A separate option because it is a genuinely separate port: the server
+        binds TCP 5556 to lanAddress but its UDP announce socket listens on
+        4555, and on 0.0.0.0 rather than the LAN address. `--bind` governs the
+        game socket only. Opening it on gameInterface is therefore the only
+        scoping available; default-deny covers every other NIC.
+      '';
     };
 
     mindustry.enable = lib.mkOption {
@@ -211,7 +228,12 @@ in
         (lib.optional cfg.mitm.enable cfg.mitm.port)
         ++ (lib.optional cfg.minetest.enable cfg.minetest.port)
         ++ (lib.optional cfg.mumble.enable cfg.mumble.port)
-        ++ (lib.optional cfg.freeciv.enable cfg.freeciv.port)
+        # announcePort, NOT freeciv.port. freeciv-server's UDP socket is the
+        # LAN-announce/discovery port, not the game port -- verified live: TCP
+        # 5556 bound to the LAN address, UDP 4555 bound to 0.0.0.0. Opening UDP
+        # 5556 was protecting a port nothing listens on, while the port actually
+        # in use went undeclared entirely.
+        ++ (lib.optional cfg.freeciv.enable cfg.freeciv.announcePort)
         ++ (lib.optional cfg.mindustry.enable cfg.mindustry.port);
     };
 
