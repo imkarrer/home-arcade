@@ -156,6 +156,36 @@ in
       '';
     };
 
+    mindustry.multicastPort = lib.mkOption {
+      type = lib.types.port;
+      default = 20151;
+      description = ''
+        UDP multicast discovery port -- what puts this server in the Mindustry
+        client's own LAN game list instead of making a kid type an IP address.
+        Exactly the role freeciv.announcePort plays, and a separate option for
+        exactly the same reason: it is a genuinely different port from the game
+        port, and conflating the two is how the freeciv one stayed broken.
+
+        Unlike mindustry.port, this is NOT configurable in Mindustry -- it is a
+        compile-time constant, so this option exists to declare the number,
+        never to change it. `javap -p -constants mindustry.Vars` on the shipped
+        server jar:
+
+            public static final int port = 6567;
+            public static final int multicastPort = 20151;
+            public static final String multicastGroup = "227.2.7.7";
+
+        and mindustry.net.ArcNetProvider's constructor calls
+        arc.net.Server.setMulticast(multicastGroup, multicastPort). No console
+        command reaches it. Corroborated live on ac-box: /proc/net/igmp lists
+        group 070702E3 -- 227.2.7.7 -- joined on the game interface, with the
+        socket bound on *:20151.
+
+        Kept as an option rather than inlined so a host on a different
+        Mindustry build has somewhere to say so.
+      '';
+    };
+
     mindustry.map = lib.mkOption {
       type = lib.types.str;
       default = "Islands";
@@ -234,7 +264,20 @@ in
         # 5556 was protecting a port nothing listens on, while the port actually
         # in use went undeclared entirely.
         ++ (lib.optional cfg.freeciv.enable cfg.freeciv.announcePort)
-        ++ (lib.optional cfg.mindustry.enable cfg.mindustry.port);
+        ++ (lib.optional cfg.mindustry.enable cfg.mindustry.port)
+        # multicastPort as well as port, and for the same reason the freeciv
+        # line above says announcePort as well: the game port carries play, a
+        # second UDP port carries DISCOVERY, and opening only the first leaves
+        # the server invisible in the client's LAN list.
+        #
+        # This one was live-broken on ac-box until 9 Sep 2026. `ss -ulnp`
+        # showed the server bound on *:20151 while `iptables -S` had accept
+        # rules for 6567/tcp and 6567/udp and nothing else -- so every
+        # multicast discovery packet from a LAN client was dropped and the
+        # only way onto the server was typing its address. Found by diffing
+        # live sockets against the port registry in homelab's tenants.nix,
+        # not by reading this file.
+        ++ (lib.optional cfg.mindustry.enable cfg.mindustry.multicastPort);
     };
 
     services.samba = lib.mkIf cfg.smb.enable {
