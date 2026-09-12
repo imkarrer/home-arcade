@@ -382,6 +382,23 @@ in
     systemd.services.rsync = lib.mkIf cfg.rsync.enable {
       after = [ "network-online.target" ];
       wants = [ "network-online.target" ];
+
+      # Second layer, independent of the first. The ordering above fixes the
+      # cause; this fixes the consequence if the cause ever recurs in a form
+      # ordering does not catch. nixpkgs' rsyncd.nix sets `RestartSec = 1`
+      # and NO `Restart=` -- a retry delay for a retry that never happens --
+      # so a failed bind left the unit dead until a human noticed, which on
+      # 12 Sep 2026 was the operator reading Grafana. Two arcade stations
+      # (192.168.1.146, 192.168.1.21) pull the ROM library over this; the
+      # export being down is a kid's machine failing to sync, not a log line.
+      #
+      # Only Restart= is set here. RestartSec is inherited from upstream's 1s
+      # rather than overridden: with the ordering fix the address exists
+      # before the first start, so this is belt-and-braces, and a plain
+      # `RestartSec = 5` here is a conflicting definition against upstream's
+      # value (hub-gates caught exactly that). Fighting nixpkgs over a number
+      # that no longer matters is not worth a mkForce.
+      serviceConfig.Restart = "on-failure";
     };
 
     systemd.services.arcade-freeciv = lib.mkIf cfg.freeciv.enable {
