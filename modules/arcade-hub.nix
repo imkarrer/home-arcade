@@ -363,6 +363,27 @@ in
       };
     };
 
+    # rsyncd binds cfg.lanAddress, so like every other LAN-bound unit in this
+    # file it must wait for that address to EXIST -- and nixpkgs' rsyncd module
+    # orders only after network.target, which is satisfied before DHCP has
+    # handed out anything. The two hand-written units below (freeciv,
+    # mindustry) already carry this pair; rsyncd was the one LAN-bound unit
+    # without it, because it comes from a nixpkgs module rather than from here.
+    #
+    # Found on ac-box's first reboot in a week, 12 Sep 2026: rsyncd started at
+    # 12:37:34 and died with "bind() failed: Cannot assign requested address",
+    # while samba-smbd -- same address, but nixpkgs' samba module orders after
+    # network-online.target -- started six seconds later and was fine. On the
+    # previous boot (5 Sep) rsyncd's first start was an hour after boot, from a
+    # nixos-rebuild switch, so this had never actually been tested at boot.
+    #
+    # The unit is `rsync.service`, not rsyncd -- nixpkgs names it that way and
+    # carries rsyncd.service only as an alias.
+    systemd.services.rsync = lib.mkIf cfg.rsync.enable {
+      after = [ "network-online.target" ];
+      wants = [ "network-online.target" ];
+    };
+
     systemd.services.arcade-freeciv = lib.mkIf cfg.freeciv.enable {
       description = "Arcade Freeciv dedicated server (LAN only)";
       after = [ "network-online.target" ];
