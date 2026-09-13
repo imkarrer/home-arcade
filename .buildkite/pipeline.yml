@@ -19,3 +19,27 @@ steps:
       - imkarrer/flox#main:
           <<: *flox
           command: bash scripts/ci_test.sh
+
+  - wait: ~
+
+  # This tree reaches ac-box only as a flake input of homelab, so a green
+  # push here changes nothing on the box until homelab's flake.lock moves.
+  # Trigger homelab's bump-lock step (scripts/hub-bump-lock.sh there) to
+  # move it: it bumps the `home-arcade` input, runs homelab's gates on the
+  # result, pushes, and homelab-deploy.timer switches at 03:30. Skips with a
+  # message while HOMELAB_PUSH_TOKEN is unset on the agent. Part III row 24
+  # in homelab/docs/architecture.md.
+  - trigger: homelab
+    label: ":arrow_up: bump homelab's lock"
+    if: build.branch == "main"
+    async: true
+    # A trigger that cannot fire (slug renamed, permission missing) must not
+    # redden THIS build -- queue-prod shares it, and a red build stalls the
+    # tenant deploy. The bump simply does not happen, and hub-status shows
+    # the lock behind its tip.
+    soft_fail: true
+    build:
+      message: "home-arcade ${BUILDKITE_COMMIT} went green"
+      env:
+        HOMELAB_BUMP_INPUT: home-arcade
+        HOMELAB_BUMP_REV: "${BUILDKITE_COMMIT}"
