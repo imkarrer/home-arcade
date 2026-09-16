@@ -1,0 +1,85 @@
+{
+  "lockfile-version": 1,
+  "manifest": {
+    "schema-version": "1.14.0",
+    "install": {
+      "git": {
+        "pkg-path": "git"
+      },
+      "python312Full": {
+        "pkg-path": "python312Full"
+      }
+    },
+    "options": {
+      "systems": [
+        "x86_64-linux"
+      ]
+    }
+  },
+  "packages": [
+    {
+      "attr_path": "git",
+      "broken": false,
+      "derivation": "/nix/store/s9ilqag44931jnwrazwrha1ql5cfahq4-git-2.50.1.drv",
+      "description": "Distributed version control system",
+      "install_id": "git",
+      "license": "GPL-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d0fc30899600b9b3466ddb260fd83deb486c32f1",
+      "name": "git-2.50.1",
+      "pname": "git",
+      "rev": "d0fc30899600b9b3466ddb260fd83deb486c32f1",
+      "rev_count": 855242,
+      "rev_date": "2025-09-02T04:28:08Z",
+      "scrape_date": "2025-09-04T04:07:12.948481Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "2.50.1",
+      "outputs_to_install": [
+        "out",
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/xipypc58mgavflc7am3m28sk9hpczwf6-git-2.50.1-debug",
+        "doc": "/nix/store/64fvclm5bwrp7zff8wa3cl8z6lhczc9s-git-2.50.1-doc",
+        "out": "/nix/store/zhv8ib8y1zfi76afddfnp8fmm562bgaa-git-2.50.1"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "python312Full",
+      "broken": false,
+      "derivation": "/nix/store/hhjkb1fmbi3h9kn1jpqjd7gmq2jbfrw3-python3-3.12.11.drv",
+      "description": "High-level dynamically-typed programming language",
+      "install_id": "python312Full",
+      "license": "Python-2.0",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=d0fc30899600b9b3466ddb260fd83deb486c32f1",
+      "name": "python3-3.12.11",
+      "pname": "python312Full",
+      "rev": "d0fc30899600b9b3466ddb260fd83deb486c32f1",
+      "rev_count": 855242,
+      "rev_date": "2025-09-02T04:28:08Z",
+      "scrape_date": "2025-09-04T04:07:40.071612Z",
+      "stabilities": [
+        "staging",
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "python3-3.12.11",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "debug": "/nix/store/xv76sfvnw9zi996yxbz8jyk6dj0ijk29-python3-3.12.11-debug",
+        "out": "/nix/store/a4vblf4lkfvdrysnzh7ir9m61irk70d0-python3-3.12.11"
+      },
+      "system": "x86_64-linux",
+      "group": "toplevel",
+      "priority": 5
+    }
+  ]
+}
