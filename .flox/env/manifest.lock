@@ -3,8 +3,18 @@
   "manifest": {
     "schema-version": "1.14.0",
     "install": {
+      "freeciv": {
+        "pkg-path": "freeciv",
+        "pkg-group": "freeciv",
+        "version": "3.2.2"
+      },
       "git": {
         "pkg-path": "git"
+      },
+      "mindustry-server": {
+        "pkg-path": "mindustry-server",
+        "pkg-group": "mindustry",
+        "version": "159.3"
       },
       "python312Full": {
         "pkg-path": "python312Full"
@@ -14,6 +24,14 @@
       "systems": [
         "x86_64-linux"
       ]
+    },
+    "services": {
+      "freeciv": {
+        "command": "  state=\"${ARCADE_STATE_DIR:-$FLOX_ENV_CACHE/arcade}\"\n  mkdir -p \"$state/freeciv\"\n  cd \"$state/freeciv\"\n  exec freeciv-server \\\n    --bind \"${ARCADE_LAN_ADDRESS:-127.0.0.1}\" \\\n    --port \"${ARCADE_FREECIV_PORT:-5556}\" \\\n    --saves \"$state/freeciv\" \\\n    --log \"$state/freeciv/server.log\"\n"
+      },
+      "mindustry": {
+        "command": "  state=\"${ARCADE_STATE_DIR:-$FLOX_ENV_CACHE/arcade}\"\n  mkdir -p \"$state/mindustry\"\n  cd \"$state/mindustry\"\n  export JAVA_TOOL_OPTIONS=\"${JAVA_TOOL_OPTIONS:--Xms256M -Xmx1G}\"\n  printf '%s\\n' \\\n    \"config name Arcade\" \\\n    \"config port ${ARCADE_MINDUSTRY_PORT:-6567}\" \\\n    \"host ${ARCADE_MINDUSTRY_MAP:-Islands} ${ARCADE_MINDUSTRY_MODE:-sandbox}\" \\\n    | exec mindustry-server\n"
+      }
     }
   },
   "packages": [
@@ -79,6 +97,65 @@
       },
       "system": "x86_64-linux",
       "group": "toplevel",
+      "priority": 5
+    },
+    {
+      "attr_path": "freeciv",
+      "broken": false,
+      "derivation": "/nix/store/br5gcj1c4xxm86vxrdcjwp5927v70rxm-freeciv-3.2.2.drv",
+      "description": "Multiplayer (or single player), turn-based strategy game",
+      "install_id": "freeciv",
+      "license": "GPL-2.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=0e251e24a4f24e036a084b6b4b2d2491af4167f4",
+      "name": "freeciv-3.2.2",
+      "pname": "freeciv",
+      "rev": "0e251e24a4f24e036a084b6b4b2d2491af4167f4",
+      "rev_count": 1053317,
+      "rev_date": "2026-08-13T05:33:33Z",
+      "scrape_date": "2026-08-14T06:16:57.531361Z",
+      "stabilities": [
+        "unstable",
+        "staging"
+      ],
+      "unfree": false,
+      "version": "3.2.2",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/mjy6w3g5x4za5f7snxp2l9vz24h9fs4j-freeciv-3.2.2"
+      },
+      "system": "x86_64-linux",
+      "group": "freeciv",
+      "priority": 5
+    },
+    {
+      "attr_path": "mindustry-server",
+      "broken": false,
+      "derivation": "/nix/store/cp1vhlyq9agnq3sggvyqpxj17ix703xq-mindustry-159.3.drv",
+      "description": "Sandbox tower defense game",
+      "install_id": "mindustry-server",
+      "license": "GPL-3.0-or-later",
+      "locked_url": "https://github.com/flox/nixpkgs?rev=b1b875982b17dabde9b4a37f3e229e74913e6db3",
+      "name": "mindustry-159.3",
+      "pname": "mindustry-server",
+      "rev": "b1b875982b17dabde9b4a37f3e229e74913e6db3",
+      "rev_count": 1074753,
+      "rev_date": "2026-09-16T08:07:56Z",
+      "scrape_date": "2026-09-17T06:22:39.710236Z",
+      "stabilities": [
+        "unstable"
+      ],
+      "unfree": false,
+      "version": "159.3",
+      "outputs_to_install": [
+        "out"
+      ],
+      "outputs": {
+        "out": "/nix/store/8d5pcnkaw0ql2vf7nsgr6nn9v6jlnq71-mindustry-159.3"
+      },
+      "system": "x86_64-linux",
+      "group": "mindustry",
       "priority": 5
     }
   ]

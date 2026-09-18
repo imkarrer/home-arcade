@@ -1,8 +1,149 @@
+# home-arcade as a flox environment (homelab ADR 0009, step 2).
+#
+# This file is the tenant: the two dedicated game servers ac-box runs for the
+# kids' LAN, spelled as packages instead of Nix. modules/arcade-hub.nix is the
+# NixOS module that runs them today and keeps working untouched; this manifest
+# reproduces the SAME two processes, read from the live units on 18 Sep 2026
+# (`systemctl cat arcade-freeciv arcade-mindustry` on ac-box): freeciv-server
+# 3.2.2 bound to the LAN address on :5556, and a Mindustry dedicated server
+# (build 159) hosting Islands/sandbox on :6567, fed its console commands on
+# stdin. It is also, unchanged in role, the CI shell scripts/ci_test.sh runs
+# in and the developer's shell.
+#
+# Nothing here needs a file from this tree at run time -- both servers read
+# only their state under /var/lib/arcade -- so a FloxHub generation (manifest
+# + lock) is the whole deploy unit for this tenant, which is what makes arcade
+# the FloxHub dogfood rather than a tree-at-a-sha like agent-hub.
+#
+# What is NOT here, on purpose: the LAN address, the ports, the state
+# directory, the slice, User=, Restart=, the firewall rules and the SMB/rsync
+# export. Those are host facts (homelab's hosts/ac-box/{tenants,
+# configuration}.nix) and stay in the closure's unit stubs -- ADR 0009 says
+# the manifest has no vocabulary for them and invents none. See "Services"
+# below for how they reach each process.
 schema-version = "1.14.0"
 
+
+## Install ------------------------------------------------------------
+## Two runtime packages, each in its own group, and two for CI.
+## ---------------------------------------------------------------------
 [install]
+# The Freeciv server. Pinned to exactly what the box runs (nixpkgs 26.05's
+# 3.2.2, `/nix/store/...-freeciv-3.2.2` in the live unit), so the flox unit is
+# the same game the kids' clients already connect to. `flox show freeciv`
+# offers 3.2.5 and 3.2.6 above it; Freeciv's network protocol is per minor
+# series, so a move within 3.2.x is the tenant's to make when the stations'
+# clients move. Its own pkg-group because no single nixpkgs revision the
+# catalog indexes carries this version AND the versions of the other three
+# packages (flox: "constraints for group 'toplevel' are too tight").
+freeciv.pkg-path = "freeciv"
+freeciv.version = "3.2.2"
+freeciv.pkg-group = "freeciv"
+
+# The Mindustry dedicated server. The box runs v159.7 today as a jar fetched
+# by hand into /var/lib/arcade/mindustry (scripts/fetch_mindustry.py) and run
+# under openjdk 21; the catalog's newest is 159.3. Same build number, and
+# Mindustry's Version.java says of the revision: "Used for hotfixes. Does not
+# affect server compatibility" -- the join check (NetServer.java) compares
+# Version.build only, 159 on both -- so the stations' 159.7 clients connect.
+# Picking the catalog's package over the hand-fetched jar is the point of the
+# exercise: the version becomes a line in this file that CI resolves and the
+# box pulls, not a file someone downloaded. The package is a wrapper around
+# its own JDK's java (openjdk 17 in this lock, where the hand-run jar was on
+# the host's 21; it has hosted under both) with `-jar
+# <store>/share/mindustry-server.jar`, and it exec's, so under `flox
+# activate -- mindustry-server` the unit's main PID is java itself (proven
+# on WSL 18 Sep 2026: TCP+UDP 6567 and UDP 20151 open, SIGTERM -> exit 143).
+# JVM flags reach it through JAVA_TOOL_OPTIONS (the stub sets -Xms256M
+# -Xmx1G, as the module does). Own pkg-group, same reason as freeciv.
+mindustry-server.pkg-path = "mindustry-server"
+mindustry-server.version = "159.3"
+mindustry-server.pkg-group = "mindustry"
+
+# scripts/ci_test.sh: the source checks (python) and the tree (git).
 git.pkg-path = "git"
 python312Full.pkg-path = "python312Full"
 
+
+## Vars ---------------------------------------------------------------
+## Empty, and deliberately: a [vars] value overrides whatever the caller
+## exported (homelab docs/flox-findings.md, "Beyond the six": FOO=caller
+## flox activate -> FOO=from-vars on 1.14.0), so nothing a host must be
+## able to set can live here.
+## ---------------------------------------------------------------------
+[vars]
+
+
+## Hook -- none, and why -----------------------------------------------
+## agent-hub's manifest defaults its host facts in a hook (`: "${X:=box
+## value}"`); the review of that step found the shape lets a stub omit a
+## host fact and silently run the tenant's guess. The stricter `: "${X:?}"`
+## was tried here and rejected for a reason that is a flox finding: the hook
+## runs on EVERY activation with a command, including CI's `flox activate --
+## bash scripts/ci_test.sh` and the pull unit's one online warm (`flox
+## activate -d <dir> -- true`), neither of which knows a LAN address. A
+## required variable in the hook fails both. So this manifest carries no
+## host fact at all: the stubs pass every one as argv (freeciv) or as the
+## unit's stdin text (mindustry), and the environment's only job is to put
+## the two binaries on PATH.
+## ---------------------------------------------------------------------
+
+
+## Services -- the developer's shell, not the production units ---------
+##
+## ADR 0009 question 2, answered on WSL (homelab docs/flox-findings.md
+## section 2): under `flox activate --start-services` a service that dies
+## is invisible to the activation -- it neither exits nor changes its exit
+## code -- so systemd cannot supervise through it. Production is therefore
+## one unit per process, each `ExecStart=flox activate -d <dir> -- <argv>`
+## with the real server as the unit's main process:
+##
+##   arcade-freeciv    flox activate -d <dir> -- freeciv-server
+##                       --bind <lan> --port 5556 --saves <state>/freeciv
+##                       --log <state>/freeciv/server.log
+##   arcade-mindustry  flox activate -d <dir> -- mindustry-server
+##                       with StandardInputText= carrying the three console
+##                       lines below (config name, config port, host) and
+##                       JAVA_TOOL_OPTIONS=-Xms256M -Xmx1G in Environment=.
+##                       Mindustry takes startup commands on stdin, one per
+##                       line, and treats argv as a single joined command,
+##                       which is why the module pipes printf into java.
+##
+## The two blocks below run the same binaries for a developer, on loopback,
+## with state under the environment's own cache (gitignored), and every
+## value overridable from the shell: ARCADE_LAN_ADDRESS, ARCADE_STATE_DIR,
+## ARCADE_FREECIV_PORT, ARCADE_MINDUSTRY_PORT, ARCADE_MINDUSTRY_MAP,
+## ARCADE_MINDUSTRY_MODE. The defaults are DEV values on purpose (loopback,
+## a scratch directory): nothing on the box reads them, and if a stub ever
+## did, a server bound to 127.0.0.1 is a visible failure, not a silent one.
+## ---------------------------------------------------------------------
+[services.freeciv]
+command = '''
+  state="${ARCADE_STATE_DIR:-$FLOX_ENV_CACHE/arcade}"
+  mkdir -p "$state/freeciv"
+  cd "$state/freeciv"
+  exec freeciv-server \
+    --bind "${ARCADE_LAN_ADDRESS:-127.0.0.1}" \
+    --port "${ARCADE_FREECIV_PORT:-5556}" \
+    --saves "$state/freeciv" \
+    --log "$state/freeciv/server.log"
+'''
+
+[services.mindustry]
+command = '''
+  state="${ARCADE_STATE_DIR:-$FLOX_ENV_CACHE/arcade}"
+  mkdir -p "$state/mindustry"
+  cd "$state/mindustry"
+  export JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:--Xms256M -Xmx1G}"
+  printf '%s\n' \
+    "config name Arcade" \
+    "config port ${ARCADE_MINDUSTRY_PORT:-6567}" \
+    "host ${ARCADE_MINDUSTRY_MAP:-Islands} ${ARCADE_MINDUSTRY_MODE:-sandbox}" \
+    | exec mindustry-server
+'''
+
+
+## Options ------------------------------------------------------------
 [options]
+# The box and the CI agent are x86_64-linux; nothing else runs this.
 systems = ["x86_64-linux"]
