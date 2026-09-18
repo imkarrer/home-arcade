@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
-"""Download Mindustry server/client and a Windows JRE onto the hub. Not for git."""
+"""Download the Mindustry Windows client and a Windows JRE onto the hub's
+station export. Not for git.
+
+Client only, since homelab ADR 0009 step 2 (18 Sep 2026): the server ac-box
+runs is the flox environment's mindustry-server (catalog 159.3), pulled as a
+generation of imkarrer/arcade, so this script no longer fetches
+server-release.jar into /var/lib/arcade/mindustry. The copy it used to put
+there (v159.7) is unused and may be deleted by hand (docs/ci.md). Same
+protocol build, 159, so the client this script fetches still joins.
+"""
 import shutil
 import urllib.request
 import zipfile
@@ -9,12 +18,10 @@ VER = "v159.7"
 BASE = f"https://github.com/Anuken/Mindustry/releases/download/{VER}/"
 JRE = "https://api.adoptium.net/v3/binary/latest/21/ga/windows/x64/jre/hotspot/normal/eclipse?project=jdk"
 
-srv = Path("/var/lib/arcade/mindustry")
 cli = Path("/srv/arcade/apps/windows/mindustry")
 jre = Path("/srv/arcade/apps/windows/jre")
 tmp = Path("/tmp/arcade-mindustry")
 tmp.mkdir(parents=True, exist_ok=True)
-srv.mkdir(parents=True, exist_ok=True)
 cli.mkdir(parents=True, exist_ok=True)
 
 
@@ -25,7 +32,6 @@ def pull(url: str, dest: Path) -> None:
     print(" ok", dest, dest.stat().st_size, flush=True)
 
 
-pull(BASE + "server-release.jar", srv / "server-release.jar")
 pull(BASE + "Mindustry.jar", cli / "Mindustry.jar")
 
 zpath = tmp / "jre.zip"

@@ -1,4 +1,18 @@
 # Canonical arcade hub module. Game files stay on /srv/arcade, not in git.
+#
+# THE MODULE IS THE SKELETON; THE ENVIRONMENT IS THE TENANT (homelab ADR
+# 0009 step 2, on ac-box since 18 Sep 2026 12:34 CDT). What the two game
+# servers RUN is .flox/env/manifest.toml, pushed by CI as a generation of
+# imkarrer/arcade and pulled by homelab's pull unit; what they run AS is
+# this file: the unit names (never renamed), User/Group, WorkingDirectory,
+# After/Wants, Restart, the state directories, the firewall holes, and the
+# SMB/rsync export of /srv/arcade. homelab's stubs
+# (hosts/ac-box/configuration.nix, homelab.tenants.arcade.environment)
+# mkForce ExecStart on both units to `flox activate -d /var/lib/arcade/env
+# -g <N> -- <server>` and read the options below for the argv and stdin
+# they pass. This file no longer builds an ExecStart of its own: the
+# placeholder each unit carries exits 1 naming the stub, so a host that
+# composes this module without one gets a failed unit, not a silent one.
 {
   config,
   lib,
@@ -8,6 +22,21 @@
 
 let
   cfg = config.services.arcade-hub;
+
+  # The placeholder ExecStart for a game unit: what runs if the composing
+  # host has no stub for it. Exits 1 with the reason on stderr (the
+  # journal), so Restart=on-failure retries it until systemd's start limit
+  # trips and the unit sits failed -- loud, and on the box the stub's
+  # mkForce means it is never the ExecStart at all. It does NOT try to run
+  # a server: this file no longer knows which package the tenant runs.
+  skeletonExecStart =
+    unit:
+    pkgs.writeShellScript "${unit}-skeleton" ''
+      echo "${unit}.service: this unit is a skeleton from home-arcade's modules/arcade-hub.nix;" \
+        "its ExecStart comes from homelab's stub (hosts/ac-box/configuration.nix," \
+        "homelab.tenants.arcade.environment.units.\"${unit}.service\"), which is not composed here." >&2
+      exit 1
+    '';
 in
 {
   options.services.arcade-hub = {
@@ -31,6 +60,11 @@ in
         config.homelab.host.networks.lan.address;`. This module stays
         importable standalone; it just refuses to guess a LAN address for
         you.
+
+        Read by homelab's arcade-freeciv stub as `--bind <lanAddress>`, and
+        by the samba/rsync export below. The environment carries no LAN
+        address (manifest header); this option is where the box's reaches
+        the server.
       '';
     };
 
@@ -54,7 +88,15 @@ in
     stateDir = lib.mkOption {
       type = lib.types.path;
       default = "/var/lib/arcade";
-      description = "Hub state: lobby DB, Minetest world, secrets. Not /var/lib/ac-host.";
+      description = ''
+        Hub state: lobby DB, Minetest world, secrets. Not /var/lib/ac-host.
+
+        A host fact homelab's stubs read: arcade-freeciv's `--saves
+        <stateDir>/freeciv --log <stateDir>/freeciv/server.log`, and both
+        units' WorkingDirectory (set here; Mindustry writes config/ under
+        its cwd, <stateDir>/mindustry). The flox environment itself lives
+        under it too, at <stateDir>/env, which homelab's pull unit creates.
+      '';
     };
 
     rsync.enable = lib.mkOption {
@@ -114,13 +156,20 @@ in
     freeciv.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Dedicated Freeciv server, LAN bind only. No metaserver.";
+      description = ''
+        The arcade-freeciv.service skeleton and its firewall holes. The
+        server itself is the environment's freeciv, run by homelab's stub
+        (see the file header); with no stub the unit exists and fails.
+      '';
     };
 
     freeciv.port = lib.mkOption {
       type = lib.types.port;
       default = 5556;
-      description = "TCP game port. freeciv-server binds this to lanAddress.";
+      description = ''
+        TCP game port. A host fact homelab's stub passes as `--port`; the
+        firewall hole on gameInterface is opened here.
+      '';
     };
 
     freeciv.announcePort = lib.mkOption {
@@ -142,17 +191,24 @@ in
     mindustry.enable = lib.mkOption {
       type = lib.types.bool;
       default = false;
-      description = "Dedicated Mindustry server, LAN firewall only.";
+      description = ''
+        The arcade-mindustry.service skeleton and its firewall holes. The
+        server itself is the environment's mindustry-server, run by
+        homelab's stub (see the file header); with no stub the unit exists
+        and fails.
+      '';
     };
 
     mindustry.port = lib.mkOption {
       type = lib.types.port;
       default = 6567;
       description = ''
-        Port the server listens on. This is now actually passed to the server
-        via its `config port` console command -- previously it only opened a
-        firewall hole and the server was left on its own 6567 default, so
-        changing this option silently did nothing to the service.
+        Port the server listens on. A host fact homelab's stub feeds the
+        server as its `config port` console line (the unit's
+        StandardInputText=); the firewall hole is opened here. It has to be
+        sent: the server otherwise sits on its built-in 6567, so before the
+        console line existed changing this option silently did nothing to
+        the service.
       '';
     };
 
@@ -190,7 +246,8 @@ in
       type = lib.types.str;
       default = "Islands";
       description = ''
-        Built-in map to host. The server's own help reads
+        Built-in map to host. A host fact homelab's stub feeds the server as
+        the `host <map> <mode>` console line. The server's own help reads
         `host [mapname] [mode]`, so the first argument is a MAP, not a mode --
         which is why "host sandbox" failed with "No map with name 'sandbox'
         found" and the server sat loaded but never opened a port.
@@ -207,9 +264,10 @@ in
       type = lib.types.enum [ "survival" "sandbox" "attack" "pvp" ];
       default = "sandbox";
       description = ''
-        Gamemode. sandbox has no enemy waves, which is the point for the kids'
-        arcade -- survival (the server's default when nothing is specified)
-        attacks them.
+        Gamemode, the second word of the stub's `host <map> <mode>` line.
+        sandbox has no enemy waves, which is the point for the kids' arcade
+        -- survival (the server's default when nothing is specified) attacks
+        them.
       '';
     };
   };
@@ -401,6 +459,29 @@ in
       serviceConfig.Restart = "on-failure";
     };
 
+    # The two game units, as skeletons. Everything below is what homelab's
+    # stubs rely on and leave alone (modules/tenant/environment.nix: "only
+    # ExecStart and the variables"): the unit's existence under its pinned
+    # name, the description, User/Group, WorkingDirectory -- Mindustry
+    # writes config/ under its cwd, so it must be <stateDir>/mindustry --
+    # After/Wants network-online (both bind lanAddress, which must exist
+    # first; see the rsync comment above), Restart/RestartSec, and
+    # wantedBy. The stub adds ExecStart (mkForce), Environment= and, for
+    # mindustry, StandardInputText= with the three console lines the
+    # wrapper this file used to carry piped into java: `config name
+    # Arcade`, `config port <mindustry.port>`, `host <map> <mode>`.
+    #
+    # Until 18 Sep 2026 this file built the real ExecStart: freeciv-server
+    # from the host's nixpkgs, and for mindustry a printf | java -jar
+    # <stateDir>/mindustry/server-release.jar wrapper around a jar
+    # scripts/fetch_mindustry.py downloaded by hand (v159.7). Both are
+    # dead with the stubs on -- the environment's freeciv 3.2.2 and
+    # mindustry-server 159.3 own argv -- and are gone rather than kept as
+    # a fallback: a fallback that hosts a port is exactly what the module
+    # and the environment must never both do (docs/ci.md). What is left is
+    # a placeholder that fails loudly, so `enable = true` without the stub
+    # is a failed unit in the journal naming what is missing, never a
+    # silent no-op and never a server on a different jar.
     systemd.services.arcade-freeciv = lib.mkIf cfg.freeciv.enable {
       description = "Arcade Freeciv dedicated server (LAN only)";
       after = [ "network-online.target" ];
@@ -410,7 +491,7 @@ in
         User = "arcade";
         Group = "arcade";
         WorkingDirectory = "${cfg.stateDir}/freeciv";
-        ExecStart = "${pkgs.freeciv}/bin/freeciv-server --bind ${cfg.lanAddress} --port ${toString cfg.freeciv.port} --saves ${cfg.stateDir}/freeciv --log ${cfg.stateDir}/freeciv/server.log";
+        ExecStart = skeletonExecStart "arcade-freeciv";
         Restart = "on-failure";
         RestartSec = 5;
       };
@@ -425,20 +506,7 @@ in
         User = "arcade";
         Group = "arcade";
         WorkingDirectory = "${cfg.stateDir}/mindustry";
-        ExecStart = "${pkgs.writeShellScript "arcade-mindustry" ''
-          # Startup commands go in on stdin, one per line, exactly as if typed at
-          # the console. Passing them as argv does not work: the server joins
-          # them into a single command line, so "config name Arcade" and
-          # "host ..." became one "config" call and the host never ran.
-          #
-          # `config port` is sent explicitly because the server otherwise
-          # ignores mindustry.port entirely and sits on its built-in 6567.
-          printf '%s\n' \
-            "config name Arcade" \
-            "config port ${toString cfg.mindustry.port}" \
-            "host ${cfg.mindustry.map} ${cfg.mindustry.mode}" \
-            | exec ${pkgs.jre_headless}/bin/java -Xms256M -Xmx1G -jar ${cfg.stateDir}/mindustry/server-release.jar
-        ''}";
+        ExecStart = skeletonExecStart "arcade-mindustry";
         Restart = "on-failure";
         RestartSec = 5;
       };
