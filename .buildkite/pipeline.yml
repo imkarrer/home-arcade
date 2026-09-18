@@ -1,5 +1,8 @@
 # GitHub push/PR → this file. Queue=self on the ac-box agent.
-# Source checks only. Never recycle AC, never read /srv/arcade.
+# Source checks plus the tenant gate, both inside this tree's flox
+# environment (docs/ci.md). Never recycle AC, never read /srv/arcade, and
+# never bind a game port: the agent shares the box with the live
+# arcade-freeciv and arcade-mindustry units.
 
 agents:
   queue: self
@@ -12,7 +15,16 @@ flox_plugin: &flox
   s3-cache-push: true
 
 steps:
-  - label: ":python: Source checks"
+  # Two gates in one step (scripts/ci_test.sh): the source checks this tree
+  # has always run, and the tenant gate -- freeciv-server and
+  # mindustry-server resolve from the environment the plugin activated and
+  # each starts far enough to print its version. The environment IS the
+  # tenant (homelab ADR 0009, step 2): the same manifest and lock become
+  # what ac-box runs, so a package the lock lost, or a build that does not
+  # start, goes red here and never becomes a generation. The plugin pushes
+  # every output the lock names to MinIO, so the box's pull can substitute
+  # rather than build (homelab docs/flox-findings.md section 1).
+  - label: ":python: Source checks + tenant gate"
     key: test
     command: bash scripts/ci_test.sh
     plugins:
@@ -21,6 +33,13 @@ steps:
           command: bash scripts/ci_test.sh
 
   - wait: ~
+
+  # NOT YET HERE, on purpose: `flox push` of the green environment to FloxHub
+  # (imkarrer/arcade), which is the deploy edge ADR 0009 gives this tenant --
+  # the box pulls a generation, not a sha. It needs a FloxHub token on the
+  # agent (a sops secret the operator creates after `flox auth login`), and
+  # it lands as its own step behind this wait, main only, once that exists.
+  # Until then the tree reaches the box only as below.
 
   # This tree reaches ac-box only as a flake input of homelab, so a green
   # push here changes nothing on the box until homelab's flake.lock moves.
