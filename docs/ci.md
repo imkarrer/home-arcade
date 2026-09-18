@@ -25,7 +25,8 @@ not in it (LAN address, ports, state dir, slice, `Restart=`) and why.
 
 ## What a push proves
 
-One step, `scripts/ci_test.sh`, two halves:
+One gate step, `scripts/ci_test.sh`, two halves (then, on `main` only, the
+push step below):
 
 | Check | Why it is useful |
 | --- | --- |
@@ -78,16 +79,102 @@ Do **not** copy `ac-host` queue-prod / pages / downtime jobs into this pipeline.
 
 ## How a green build reaches the box
 
-Two edges, one live and one not yet:
+Two edges, both behind the `wait`, both `main` only:
 
-1. **Today**: the `trigger: homelab` step bumps homelab's `home-arcade` flake
-   input, and the closure switches at 03:30. This moves `modules/arcade-hub.nix`
-   and nothing else the box runs.
-2. **Not yet**: a `flox push` of the green environment to FloxHub
-   (`imkarrer/arcade`) after the `wait`, on `main` only, so the box can pull a
-   generation instead of a sha. It needs a FloxHub token on the agent -- a
-   sops secret the operator creates after `flox auth login` -- and is added as
-   its own step once that exists. The pipeline file marks where.
+1. **The environment, as a FloxHub generation** (ADR 0009 step 2 -- this
+   tenant's own deploy edge). `scripts/ci_push.sh` makes the green manifest
+   and lock the live generation of `imkarrer/arcade` on FloxHub, reads the
+   generation number back, and uploads a `trigger: homelab` step that asks
+   homelab to stage that generation on the box. The **generation is the
+   staged unit**: manifest + lock, nothing from this tree, because neither
+   server reads a file from it. On the box, homelab's pull unit
+   (`modules/tenant/environment-pull.nix`, gaining a FloxHub source kind
+   for this tenant) is to pull that generation (`flox pull -g N --copy`,
+   homelab `docs/flox-findings.md` section 3), warm it once online, record
+   it, and restart the stubs. Until homelab has pulled a first generation,
+   **the box's stubs are off** and the two games keep running from
+   `modules/arcade-hub.nix`; homelab's order is: the pull unit lands and
+   warms a generation first, the stubs are switched on after, so the module
+   and the environment never both host a port. Nothing in this tree
+   decides that order; this pipeline only pushes and asks.
+2. **The module, as a flake input** (still live). The `trigger: homelab`
+   bump-lock step bumps homelab's `home-arcade` input, and the closure
+   switches at 03:30. This moves `modules/arcade-hub.nix` and nothing else
+   the box runs. It stays until the box runs both servers from the
+   environment and the module is gone.
+
+### The push step
+
+What it does, and what it proved on WSL (18 Sep 2026, flox 1.14.0 -- the
+agent's version -- and 1.14.1, against throwaway environments
+`imkarrer/hub-arcade-spike` and `imkarrer/hub-arcade-spike-first`):
+
+- A CI checkout is a **path** environment; FloxHub holds a **managed** one
+  with a generation history. `flox push -d .` from the checkout works exactly
+  once (it creates `imkarrer/arcade`); the next time it fails with "already
+  exists", and `--force` "succeeds" by replacing the remote history with a
+  fresh generation 1 -- no history, and any copy that had pulled the old
+  revision breaks. So the script pulls the live generation into a scratch
+  directory, overwrites its `manifest.toml` and `manifest.lock` with the
+  tree's, commits them as a generation (`flox edit --sync`) and pushes.
+  Only when `imkarrer/arcade` does not exist does it push a path copy with
+  `--owner imkarrer`: the first push is CI's, so the history starts at a
+  sha CI proved.
+- **The generation carries the lock CI tested.** `flox edit --sync` does not
+  re-resolve; it rewrites the lock with the packages in a different order.
+  The script compares the two by content, and fails the step if they ever
+  differ, since a generation that is not the lock the tenant gate ran would
+  be the one thing this edge must never push. The same comparison is why a
+  commit that changes neither manifest nor lock pushes nothing: the live
+  generation is re-staged, and `flox` itself is not asked, because it
+  compares locks byte for byte and would mint a generation out of the
+  reordering.
+- **The generation number** is not in `flox push`'s output on either
+  version. `flox generations list -d <the pushed copy>` prints `Generation:
+  N (live)` on both, and the copy's own metadata is what was just pushed.
+  (`flox generations list -r owner/name` is NOT used: it reads a cached
+  copy under `~/.cache/flox/remote/` that does not refresh, and after a
+  force push it errors with "can't find rev specified in lockfile".)
+- The number goes to Buildkite meta-data `arcade-generation`, and the
+  trigger step is uploaded from the script (`buildkite-agent pipeline
+  upload` of a generated fragment) rather than written statically: a
+  static trigger's `build.env` is interpolated from the job's environment
+  when the pipeline is uploaded, not from meta-data, and the number exists
+  only after the push. What the trigger carries, all in `build.env`, which
+  is what homelab's queue-environment step must accept:
+
+  | Variable | Value |
+  | --- | --- |
+  | `HOMELAB_STAGE_ENVIRONMENT` | `arcade` -- the tenant, and the pending file's name on the box |
+  | `HOMELAB_STAGE_ENV` | `imkarrer/arcade` -- what to pull |
+  | `HOMELAB_STAGE_GENERATION` | the generation number, as a string |
+  | `HOMELAB_STAGE_REV` | this tree's sha, so the record ties the generation to the commit that produced it |
+  | `HOMELAB_STAGE_BRANCH` | this tree's branch (in a trigger build Buildkite's own describes homelab's) |
+  | `HOMELAB_STAGE_BUILD` | this build's URL |
+
+- **Skips until the token exists.** The step needs `FLOX_FLOXHUB_TOKEN` in
+  the job environment (flox reads it on both versions, no `flox auth login`
+  needed: "Credential read from the FLOX_FLOXHUB_TOKEN environment
+  variable"). The agent inherits it from ac-host's `ci-env` once homelab
+  renders the `floxhub-token` sops secret there -- a homelab change. Until
+  then the script prints `skip push: FLOX_FLOXHUB_TOKEN is not set` and
+  exits 0, the build stays green, and no trigger is uploaded; the same
+  posture as bump-lock without `HOMELAB_PUSH_TOKEN`. Once the token is
+  there, a failed push is a red step, because a token that stopped working
+  is news.
+- The environment is pushed **public** (`flox push`'s default, and what the
+  first push said: "successfully pushed to FloxHub as public"). The
+  manifest carries no host fact and no secret, by design (its own header
+  says what is left out), so there is nothing in it to hide.
+- FloxHub environments cannot be deleted from the CLI (`flox delete` on a
+  linked copy removes the link only and says so), so the two spike
+  environments above are the operator's to remove in the FloxHub UI.
+
+Locally, the script runs from a laptop against a throwaway environment
+(`ARCADE_FLOXHUB_REF=imkarrer/<spike>`) and prints the trigger it would
+upload instead of uploading it; it never pushes `imkarrer/arcade` from a
+laptop unless told to, and it should not be told to -- the first push is
+CI's.
 
 ## First-time pipeline (Buildkite UI)
 
