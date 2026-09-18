@@ -15,13 +15,27 @@ carry python. It installs the two game servers ac-box runs (`freeciv` 3.2.2,
 `mindustry-server` 159.3, each in its own package group so the catalog can
 resolve the exact versions) beside `python312Full` and `git` for the source
 checks. The same manifest and lock are the developer's shell, what CI tests,
-and what the box is meant to run: a FloxHub generation of this environment is
-the whole deploy unit, because neither game reads a file from this tree at run
-time (verified on the box 18 Sep 2026 -- both units reference only their
+and what the box runs -- since 18 Sep 2026 12:34 CDT, from generation 1 of
+`imkarrer/arcade`: a FloxHub generation of this environment is the whole
+deploy unit, because neither game reads a file from this tree at run time
+(verified on the box the same day -- both units reference only their
 package's store path and `/var/lib/arcade`; `shaders/`, `www/`, `catalog/` and
 `metadata/` reach the stations through the SMB/rsync export of `/srv/arcade`,
 which stays a NixOS unit). The manifest's own header says what is deliberately
 not in it (LAN address, ports, state dir, slice, `Restart=`) and why.
+
+**The module is the skeleton.** `modules/arcade-hub.nix` no longer runs
+either server. It declares what the servers run *as*: the two unit names
+(pinned, never renamed), `User=arcade`, `WorkingDirectory`, `After=/Wants=`,
+`Restart=`, the state directories, the firewall holes on the LAN interface,
+and the SMB/rsync export -- plus the options homelab's stubs read for the
+argv and stdin they pass (`lanAddress`, `stateDir`, `freeciv.port`,
+`mindustry.{port,map,mode}`), which are host facts the box sets. Its
+`ExecStart` is a placeholder that exits 1 naming the stub, so a host that
+composes the module without one gets a failed unit rather than a silent
+one or a second server. Two trees, one unit each: what to run is here in
+the manifest, what to run it as is here in the module, and which
+generation to run is homelab's (its pull unit pins it).
 
 ## What a push proves
 
@@ -88,20 +102,26 @@ Two edges, both behind the `wait`, both `main` only:
    homelab to stage that generation on the box. The **generation is the
    staged unit**: manifest + lock, nothing from this tree, because neither
    server reads a file from it. On the box, homelab's pull unit
-   (`modules/tenant/environment-pull.nix`, gaining a FloxHub source kind
-   for this tenant) is to pull that generation (`flox pull -g N --copy`,
-   homelab `docs/flox-findings.md` section 3), warm it once online, record
-   it, and restart the stubs. Until homelab has pulled a first generation,
-   **the box's stubs are off** and the two games keep running from
-   `modules/arcade-hub.nix`; homelab's order is: the pull unit lands and
-   warms a generation first, the stubs are switched on after, so the module
-   and the environment never both host a port. Nothing in this tree
-   decides that order; this pipeline only pushes and asks.
-2. **The module, as a flake input** (still live). The `trigger: homelab`
-   bump-lock step bumps homelab's `home-arcade` input, and the closure
-   switches at 03:30. This moves `modules/arcade-hub.nix` and nothing else
-   the box runs. It stays until the box runs both servers from the
-   environment and the module is gone.
+   (`modules/tenant/environment-pull.nix`, FloxHub source kind) pulls that
+   generation (`flox pull -g N --copy`, homelab `docs/flox-findings.md`
+   section 3), warms it once online, records it, pins it, and restarts the
+   stubs into it. This is the edge a game-server change takes: a manifest
+   or lock edit here becomes a generation, and the generation becomes the
+   running server, with no closure switch. The stubs have been on since 18
+   Sep 2026 12:34 CDT (generation 1); the first-switch order that got them
+   there -- pull unit first, stubs after, so the module and the
+   environment never both hosted a port -- is history in homelab's
+   `hosts/ac-box/configuration.nix`. Nothing in this tree decides what the
+   box runs next; this pipeline only pushes and asks.
+2. **The skeleton, as a flake input.** The `trigger: homelab` bump-lock
+   step bumps homelab's `home-arcade` input, and the closure switches at
+   03:30. This moves `modules/arcade-hub.nix` -- unit names, `User=`,
+   directories, firewall holes, the SMB/rsync export, the options the
+   stubs read -- and no server: since the module stopped building an
+   `ExecStart`, a bump that changes nothing the stubs consume is a no-op on
+   the composed units (proven when it landed: the toplevel `drvPath` was
+   byte-identical with the stubs on). It stays until homelab folds the
+   skeleton into its stubs and retires the input (homelab `homelab-158.11`).
 
 ### The push step
 
