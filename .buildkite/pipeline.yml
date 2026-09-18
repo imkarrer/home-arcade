@@ -1,8 +1,10 @@
 # GitHub push/PR → this file. Queue=self on the ac-box agent.
 # Source checks plus the tenant gate, both inside this tree's flox
-# environment (docs/ci.md). Never recycle AC, never read /srv/arcade, and
-# never bind a game port: the agent shares the box with the live
-# arcade-freeciv and arcade-mindustry units.
+# environment (docs/ci.md); on main, the green environment is then pushed
+# to FloxHub as a generation of imkarrer/arcade and homelab is told to
+# stage it (ADR 0009 step 2 -- the tenant's deploy edge). Never recycle
+# AC, never read /srv/arcade, and never bind a game port: the agent shares
+# the box with the live arcade-freeciv and arcade-mindustry units.
 
 agents:
   queue: self
@@ -34,20 +36,48 @@ steps:
 
   - wait: ~
 
-  # NOT YET HERE, on purpose: `flox push` of the green environment to FloxHub
-  # (imkarrer/arcade), which is the deploy edge ADR 0009 gives this tenant --
-  # the box pulls a generation, not a sha. It needs a FloxHub token on the
-  # agent (a sops secret the operator creates after `flox auth login`), and
-  # it lands as its own step behind this wait, main only, once that exists.
-  # Until then the tree reaches the box only as below.
+  # The deploy edge ADR 0009 gives this tenant: the box pulls a GENERATION
+  # of imkarrer/arcade, not a sha, because nothing the two servers run reads
+  # a file from this tree. scripts/ci_push.sh makes the green manifest and
+  # lock the environment's live generation (the first push creates
+  # imkarrer/arcade; a later push whose manifest or lock differ adds a
+  # generation; one whose do not pushes nothing and names the live one),
+  # reads the generation number back, records it as meta-data
+  # `arcade-generation`, and uploads the `trigger: homelab` step that stages
+  # it -- uploaded from the script rather than written here because a
+  # static trigger's build.env is interpolated from the job environment, not
+  # from meta-data, and the number exists only after the push. What that
+  # trigger carries is spelled out in the script and docs/ci.md.
+  #
+  # Needs FLOX_FLOXHUB_TOKEN in the job environment: the agent inherits it
+  # from ac-host's ci-env once homelab renders the floxhub-token sops
+  # secret there. Until then the script SKIPS with a message and this build
+  # stays green (as bump-lock does without HOMELAB_PUSH_TOKEN); with it, a
+  # failed push is red, because a token that stopped working is news.
+  # Under the plugin for the same reasons as the gate: flox at the agent's
+  # version, and the environment's python3 for the lock comparison. The
+  # plugin re-activates the environment the test step already built and
+  # substituted, so this costs seconds; it does not push to MinIO again.
+  - label: ":flox: push the green environment to FloxHub (imkarrer/arcade)"
+    key: push
+    if: build.branch == "main"
+    command: bash scripts/ci_push.sh
+    plugins:
+      - imkarrer/flox#main:
+          <<: *flox
+          s3-cache-push: false
+          command: bash scripts/ci_push.sh
 
-  # This tree reaches ac-box only as a flake input of homelab, so a green
-  # push here changes nothing on the box until homelab's flake.lock moves.
-  # Trigger homelab's bump-lock step (scripts/hub-bump-lock.sh there) to
-  # move it: it bumps the `home-arcade` input, runs homelab's gates on the
-  # result, pushes, and homelab-deploy.timer switches at 03:30. Skips with a
+  # The OTHER edge, still live: modules/arcade-hub.nix reaches ac-box as a
+  # flake input of homelab, so a green push here changes nothing about
+  # that module on the box until homelab's flake.lock moves. Trigger
+  # homelab's bump-lock step (scripts/hub-bump-lock.sh there) to move it:
+  # it bumps the `home-arcade` input, runs homelab's gates on the result,
+  # pushes, and homelab-deploy.timer switches at 03:30. Skips with a
   # message while HOMELAB_PUSH_TOKEN is unset on the agent. Part III row 24
-  # in homelab/docs/architecture.md.
+  # in homelab/docs/architecture.md. Stays until the box runs both servers
+  # from the environment and the module is gone; independent of the push
+  # above (no depends_on), so a push that skips does not hold the bump.
   - trigger: homelab
     label: ":arrow_up: bump homelab's lock"
     if: build.branch == "main"
