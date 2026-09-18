@@ -68,27 +68,7 @@ steps:
           s3-cache-push: false
           command: bash scripts/ci_push.sh
 
-  # The OTHER edge, still live: modules/arcade-hub.nix reaches ac-box as a
-  # flake input of homelab, so a green push here changes nothing about
-  # that module on the box until homelab's flake.lock moves. Trigger
-  # homelab's bump-lock step (scripts/hub-bump-lock.sh there) to move it:
-  # it bumps the `home-arcade` input, runs homelab's gates on the result,
-  # pushes, and homelab-deploy.timer switches at 03:30. Skips with a
-  # message while HOMELAB_PUSH_TOKEN is unset on the agent. Part III row 24
-  # in homelab/docs/architecture.md. Stays until the box runs both servers
-  # from the environment and the module is gone; independent of the push
-  # above (no depends_on), so a push that skips does not hold the bump.
-  - trigger: homelab
-    label: ":arrow_up: bump homelab's lock"
-    if: build.branch == "main"
-    async: true
-    # A trigger that cannot fire (slug renamed, permission missing) must not
-    # redden THIS build -- queue-prod shares it, and a red build stalls the
-    # tenant deploy. The bump simply does not happen, and hub-status shows
-    # the lock behind its tip.
-    soft_fail: true
-    build:
-      message: "home-arcade ${BUILDKITE_COMMIT} went green"
-      env:
-        HOMELAB_BUMP_INPUT: home-arcade
-        HOMELAB_BUMP_REV: "${BUILDKITE_COMMIT}"
+  # No bump-lock trigger any more: since homelab d7d4f58 (18 Sep 2026,
+  # homelab-158.11) this tree is not a flake input of the closure. The box
+  # takes it only through the environment edge below; homelab's bump-lock
+  # step would skip it by name anyway.
