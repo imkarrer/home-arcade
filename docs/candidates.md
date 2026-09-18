@@ -40,7 +40,7 @@ Not a deploy list. v1 tiles stay in [`plan-arcade.md`](plan-arcade.md#game-catal
 
 | Title | Kind | License | Host | GPU | Kids | Note |
 | --- | --- | --- | --- | --- | --- | --- |
-| Mindustry | Factory + defense | FOSS | dedicated | trivial | yes | Best Factorio stand-in. `server-release.jar` on ac-box. |
+| Mindustry | Factory + defense | FOSS | dedicated | trivial | yes | Best Factorio stand-in. Live on ac-box as the flox environment's `mindustry-server` (`.flox/env/manifest.toml`). |
 | OpenTTD | Trains / logistics | FOSS | dedicated | trivial | yes | Full free art (OpenGFX). Always-on map. |
 | Luanti (Minetest) | Voxel sandbox | FOSS | dedicated | tune low | yes | Already planned. Short view distance, no shaders. |
 | shapez (not Shapez 2) | Belt puzzle | FOSS | listen / LAN | trivial | yes | GPL shapez.io. Weak as a 24/7 world. |

@@ -176,6 +176,42 @@ upload instead of uploading it; it never pushes `imkarrer/arcade` from a
 laptop unless told to, and it should not be told to -- the first push is
 CI's.
 
+## On the box after the flip: the hand-fetched jar, and the version
+
+`/var/lib/arcade/mindustry/server-release.jar` (19 MB, Mindustry v159.7,
+put there by hand with `scripts/fetch_mindustry.py` on 6 Sep 2026) has been
+unused since 18 Sep 2026 12:34 CDT, when the stubs flipped on and
+`arcade-mindustry.service`'s java began running the environment's
+`/nix/store/…-mindustry-159.3/share/mindustry-server.jar` (checked on the
+box: the unit's main PID holds that jar open and nothing holds the old one).
+The module no longer references it and the script no longer fetches it. It
+may be deleted on the box, **by a human** -- it is state under
+`/var/lib/arcade`, so not a closure step, and not something an agent does
+(homelab `AGENTS.md`: ac-box is read-only):
+
+```bash
+ssh ac-box 'sudo rm /var/lib/arcade/mindustry/server-release.jar'
+```
+
+Leave `config/` beside it alone: that is the server's live settings and
+maps, written under the unit's `WorkingDirectory` by either jar, and the
+environment's server reads it now.
+
+**The version, honestly.** The jar was 159.7; the environment's
+`mindustry-server` is the catalog's 159.3 (the newest it indexes, per the
+manifest's own comment). Same protocol build, 159 -- Mindustry's join check
+compares `Version.build` only, and the revision is documented as hotfix-only
+-- so the stations' 159.7 clients connect exactly as before, and have since
+the flip. What changed is who owns the version, which is ADR 0009 question
+6's version coupling seen from the tenant's side. Before, a bump was a
+download by hand into `/var/lib` and a restart, at whatever GitHub had that
+day and with no record but the file's mtime. Now it is a manifest edit
+(`mindustry-server.version`), the lock the pinned flox 1.14.0 writes, a
+push, and a new generation the box pulls -- and the version is bounded by
+what the catalog carries, so moving past 159.3 is a catalog question, not
+a `curl`. That is the trade, taken on purpose: a version in git, tested by
+CI and pinned by a generation, over the newest version on the box.
+
 ## First-time pipeline (Buildkite UI)
 
 Org **`isaac-karrer`**, cluster Default, queue **`self`**.
