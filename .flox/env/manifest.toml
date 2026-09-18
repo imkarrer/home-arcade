@@ -1,9 +1,11 @@
 # home-arcade as a flox environment (homelab ADR 0009, step 2).
 #
 # This file is the tenant: the two dedicated game servers ac-box runs for the
-# kids' LAN, spelled as packages instead of Nix. modules/arcade-hub.nix is the
-# NixOS module that runs them today and keeps working untouched; this manifest
-# reproduces the SAME two processes, read from the live units on 18 Sep 2026
+# kids' LAN, spelled as packages instead of Nix. Since 18 Sep 2026 12:34 CDT
+# the box runs both from this environment (generation N of imkarrer/arcade,
+# pulled by homelab's arcade-environment-pull; modules/arcade-hub.nix is the
+# unit skeleton only). It reproduces the SAME two processes the module ran,
+# read from the live units on 18 Sep 2026
 # (`systemctl cat arcade-freeciv arcade-mindustry` on ac-box): freeciv-server
 # 3.2.2 bound to the LAN address on :5556, and a Mindustry dedicated server
 # (build 159) hosting Islands/sandbox on :6567, fed its console commands on
@@ -21,7 +23,7 @@
 # configuration}.nix) and stay in the closure's unit stubs -- ADR 0009 says
 # the manifest has no vocabulary for them and invents none. See "Services"
 # below for how they reach each process.
-schema-version = "1.14.0"
+schema-version = "1.16.0"
 
 
 ## Install ------------------------------------------------------------
