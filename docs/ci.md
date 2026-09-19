@@ -24,8 +24,10 @@ package's store path and `/var/lib/arcade`; `shaders/`, `www/`, `catalog/` and
 which stays a NixOS unit). The manifest's own header says what is deliberately
 not in it (LAN address, ports, state dir, slice, `Restart=`) and why.
 
-**The module is the skeleton.** `modules/arcade-hub.nix` no longer runs
-either server. It declares what the servers run *as*: the two unit names
+**The skeleton is homelab's.** Until 19 Sep 2026 `modules/arcade-hub.nix`
+here declared what the servers run *as* (deleted with `flake.nix`; the
+tree is manifest-only, and homelab's `hosts/ac-box/tenants/arcade.nix`
+now declares it): the two unit names
 (pinned, never renamed), `User=arcade`, `WorkingDirectory`, `After=/Wants=`,
 `Restart=`, the state directories, the firewall holes on the LAN interface,
 and the SMB/rsync export -- plus the options homelab's stubs read for the
@@ -113,13 +115,11 @@ Two edges, both behind the `wait`, both `main` only:
    environment never both hosted a port -- is history in homelab's
    `hosts/ac-box/configuration.nix`. Nothing in this tree decides what the
    box runs next; this pipeline only pushes and asks.
-2. **The skeleton, as a flake input.** The `trigger: homelab` bump-lock
-   step bumps homelab's `home-arcade` input, and the closure switches at
-   03:30. This moves `modules/arcade-hub.nix` -- unit names, `User=`,
-   directories, firewall holes, the SMB/rsync export, the options the
-   stubs read -- and no server: since the module stopped building an
-   `ExecStart`, a bump that changes nothing the stubs consume is a no-op on
-   the composed units (proven when it landed: the toplevel `drvPath` was
+2. **The skeleton -- retired edge.** Until 19 Sep 2026 this tree was a
+   flake input of homelab and a bump-lock step moved its module; the
+   module now lives in homelab and there is no second edge. (History:
+   when the module stopped building an `ExecStart`, a bump that changed
+   nothing the stubs consumed was a no-op -- the toplevel `drvPath` was
    byte-identical with the stubs on). It stays until homelab folds the
    skeleton into its stubs and retires the input (homelab `homelab-158.11`).
 

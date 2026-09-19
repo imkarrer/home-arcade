@@ -122,11 +122,15 @@ class HubExampleTests(unittest.TestCase):
 
 
 class FlakeAndWindowsTests(unittest.TestCase):
-    def test_flake_exports_hub_module(self):
-        text = (ROOT / "flake.nix").read_text(encoding="utf-8")
-        self.assertIn("nixosModules.arcade-hub", text)
-        self.assertIn("./modules/arcade-hub.nix", text)
-        self.assertTrue((ROOT / "modules" / "arcade-hub.nix").is_file())
+    def test_tree_is_manifest_only(self):
+        # Inverted 19 Sep 2026 (homelab ADR 0009): the box runs this tenant
+        # from .flox/, homelab holds the unit skeleton, and this tree carries
+        # no Nix at all. A flake or module reappearing here would be a
+        # second spelling of what homelab declares.
+        self.assertFalse((ROOT / "flake.nix").exists())
+        self.assertFalse((ROOT / "modules").exists())
+        self.assertTrue((ROOT / ".flox" / "env" / "manifest.toml").is_file())
+        self.assertTrue((ROOT / ".flox" / "env" / "manifest.lock").is_file())
 
     def test_windows_launchers_parse_as_text(self):
         for name in ("arcade-agent.ps1", "arcade-launch.ps1", "sync.ps1", "play.ps1"):
