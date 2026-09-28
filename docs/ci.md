@@ -1,6 +1,6 @@
 # CI (Buildkite)
 
-Pushes and PRs to `imkarrer/home-arcade` run on the same `ac-box` agent
+Pushes and PRs to `imkarrer/home-arcade` run on the same `arcade-box` agent
 (`queue: self`) as `ac-host`, inside this tree's flox environment
 (`.flox/env/manifest.toml`, activated by the flox Buildkite plugin). Jobs must
 not read `/srv/arcade`, start RetroArch, recycle AC lobbies, or open a game
@@ -11,7 +11,7 @@ colliding with the kids' servers, not testing anything.
 ## The environment is the tenant
 
 Since homelab ADR 0009 step 2 the manifest is not a CI shell that happens to
-carry python. It installs the two game servers ac-box runs (`freeciv` 3.2.2,
+carry python. It installs the two game servers arcade-box runs (`freeciv` 3.2.2,
 `mindustry-server` 159.3, each in its own package group so the catalog can
 resolve the exact versions) beside `python312Full` and `git` for the source
 checks. The same manifest and lock are the developer's shell, what CI tests,
@@ -26,7 +26,7 @@ not in it (LAN address, ports, state dir, slice, `Restart=`) and why.
 
 **The skeleton is homelab's.** Until 19 Sep 2026 `modules/arcade-hub.nix`
 here declared what the servers run *as* (deleted with `flake.nix`; the
-tree is manifest-only, and homelab's `hosts/ac-box/tenants/arcade.nix`
+tree is manifest-only, and homelab's `hosts/arcade-box/tenants/arcade.nix`
 now declares it): the two unit names
 (pinned, never renamed), `User=arcade`, `WorkingDirectory`, `After=/Wants=`,
 `Restart=`, the state directories, the firewall holes on the LAN interface,
@@ -88,8 +88,9 @@ flox activate -- bash scripts/ci_test.sh
   enough to bind (see the first paragraph). The hosting shape is proven on a
   developer's machine with the manifest's `[services]` blocks (loopback,
   scratch state) and on the box by the stub units.
-- `nixos-rebuild` of `arcade-hub.nix`: homelab's gate composes this tree into
-  `ac-box` by `--override-input`, and that runs from homelab, not here
+- The units the servers run under: `arcade-hub.nix` left this tree on 19 Sep
+  2026, homelab's `hosts/arcade-box` declares them, and homelab's gate
+  evaluates that host, from homelab, not here
 
 Do **not** copy `ac-host` queue-prod / pages / downtime jobs into this pipeline.
 
@@ -110,10 +111,11 @@ Two edges, both behind the `wait`, both `main` only:
    stubs into it. This is the edge a game-server change takes: a manifest
    or lock edit here becomes a generation, and the generation becomes the
    running server, with no closure switch. The stubs have been on since 18
-   Sep 2026 12:34 CDT (generation 1); the first-switch order that got them
-   there -- pull unit first, stubs after, so the module and the
-   environment never both hosted a port -- is history in homelab's
-   `hosts/ac-box/configuration.nix`. Nothing in this tree decides what the
+   Sep 2026 12:34 CDT (generation 1, on the Z840 until the 26 Sep cutover);
+   the first-switch order that got them there -- pull unit first, stubs
+   after, so the module and the environment never both hosted a port -- is
+   spelled out in homelab's `hosts/arcade-box/configuration.nix`, which
+   followed it again at the cutover. Nothing in this tree decides what the
    box runs next; this pipeline only pushes and asks.
 2. **The skeleton -- retired edge.** Until 19 Sep 2026 this tree was a
    flake input of homelab and a bump-lock step moved its module; the
@@ -207,10 +209,10 @@ box: the unit's main PID holds that jar open and nothing holds the old one).
 The module no longer references it and the script no longer fetches it. It
 may be deleted on the box, **by a human** -- it is state under
 `/var/lib/arcade`, so not a closure step, and not something an agent does
-(homelab `AGENTS.md`: ac-box is read-only):
+(homelab `AGENTS.md`: arcade-box is read-only):
 
 ```bash
-ssh ac-box 'sudo rm /var/lib/arcade/mindustry/server-release.jar'
+ssh arcade-box 'sudo rm /var/lib/arcade/mindustry/server-release.jar'
 ```
 
 Leave `config/` beside it alone: that is the server's live settings and

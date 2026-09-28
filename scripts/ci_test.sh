@@ -3,9 +3,9 @@
 #
 # Two halves. The source checks are what this tree has always gated. The
 # tenant gate (homelab ADR 0009, step 2) proves the flox environment this
-# script runs in IS the tenant: the two game servers ac-box runs resolve from
-# the environment's own bin, not from whatever the agent happens to have on
-# PATH, and each starts far enough to print its version. A green build here
+# script runs in IS the tenant: the two game servers arcade-box runs resolve
+# from the environment's own bin, not from whatever the agent happens to have
+# on PATH, and each starts far enough to print its version. A green build here
 # is what becomes the pushed FloxHub generation the box pulls, so this is the
 # last place a manifest that lost a package, or locked a build that does not
 # start, can be caught before it is the box's problem.
@@ -45,7 +45,7 @@ freeciv-server --version 2>&1 | grep -E '^Freeciv version [0-9]'
 # the stub feed it that way too). `version` then `exit` starts the real
 # server (~2 s), prints "build <n>" and shuts down, exit 0 -- the same code
 # path the unit runs, minus `host`, so no port is ever bound: the agent
-# shares ac-box with the live servers on :5556 and :6567. From a scratch
+# shares arcade-box with the live servers on :5556 and :6567. From a scratch
 # directory, because the server writes config/ into its working directory;
 # a small heap, because the agent is shared.
 scratch="$(mktemp -d)"

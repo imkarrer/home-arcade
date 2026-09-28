@@ -1,4 +1,4 @@
-# Game content — never commit. Lives on ac-box:/srv/arcade only.
+# Game content — never commit. Lives on arcade-box:/srv/arcade only.
 roms/
 cores/
 saves/

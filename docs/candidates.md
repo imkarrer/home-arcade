@@ -8,7 +8,7 @@ Not a deploy list. v1 tiles stay in [`plan-arcade.md`](plan-arcade.md#game-catal
 
 | Value | Meaning |
 | --- | --- |
-| **dedicated** | Headless server on `ac-box`, 24/7. Stations only join. World survives if every kid quits. |
+| **dedicated** | Headless server on `arcade-box`, 24/7. Stations only join. World survives if every kid quits. |
 | **listen / LAN** | One station *is* the server (kid UI **Host** = Player 1). Session dies when that station quits. |
 | **solo** | No multiplayer. Files can still live on the hub and sync to stations. |
 
@@ -40,7 +40,7 @@ Not a deploy list. v1 tiles stay in [`plan-arcade.md`](plan-arcade.md#game-catal
 
 | Title | Kind | License | Host | GPU | Kids | Note |
 | --- | --- | --- | --- | --- | --- | --- |
-| Mindustry | Factory + defense | FOSS | dedicated | trivial | yes | Best Factorio stand-in. Live on ac-box as the flox environment's `mindustry-server` (`.flox/env/manifest.toml`). |
+| Mindustry | Factory + defense | FOSS | dedicated | trivial | yes | Best Factorio stand-in. Live on arcade-box as the flox environment's `mindustry-server` (`.flox/env/manifest.toml`). |
 | OpenTTD | Trains / logistics | FOSS | dedicated | trivial | yes | Full free art (OpenGFX). Always-on map. |
 | Luanti (Minetest) | Voxel sandbox | FOSS | dedicated | tune low | yes | Already planned. Short view distance, no shaders. |
 | shapez (not Shapez 2) | Belt puzzle | FOSS | listen / LAN | trivial | yes | GPL shapez.io. Weak as a 24/7 world. |

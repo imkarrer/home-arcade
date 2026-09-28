@@ -82,7 +82,7 @@ function New-HomeArcadeShortcut([string]$RaExe, [string]$PlayPs1) {
 Write-Host "=== Home Arcade Windows install ==="
 
 if (-not (Test-Connection -ComputerName $Hub -Count 1 -Quiet)) {
-    throw "Cannot ping $Hub. Same LAN as ac-box?"
+    throw "Cannot ping $Hub. Same LAN as arcade-box?"
 }
 
 if (-not $StationId) {
@@ -99,7 +99,7 @@ $roms = Join-Path $Local "roms"
 $saves = Join-Path $Local "saves"
 $shaders = Join-Path $Local "shaders"
 $cfgLines = @(
-    "# Home Arcade spoke - content and cores come from ac-box only.",
+    "# Home Arcade spoke - content and cores come from arcade-box only.",
     "rgui_browser_directory = `"$roms`"",
     "savefile_directory = `"$saves`"",
     "video_shader_dir = `"$shaders`"",

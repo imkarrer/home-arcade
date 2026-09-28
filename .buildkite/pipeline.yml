@@ -1,4 +1,4 @@
-# GitHub push/PR → this file. Queue=self on the ac-box agent.
+# GitHub push/PR → this file. Queue=self on the arcade-box agent.
 # Source checks plus the tenant gate, both inside this tree's flox
 # environment (docs/ci.md); on main, the green environment is then pushed
 # to FloxHub as a generation of imkarrer/arcade and homelab is told to
@@ -22,7 +22,7 @@ steps:
   # mindustry-server resolve from the environment the plugin activated and
   # each starts far enough to print its version. The environment IS the
   # tenant (homelab ADR 0009, step 2): the same manifest and lock become
-  # what ac-box runs, so a package the lock lost, or a build that does not
+  # what arcade-box runs, so a package the lock lost, or a build that does not
   # start, goes red here and never becomes a generation. The plugin pushes
   # every output the lock names to MinIO, so the box's pull can substitute
   # rather than build (homelab docs/flox-findings.md section 1).

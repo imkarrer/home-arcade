@@ -23,7 +23,7 @@ net use \\192.168.1.50\arcade /user:arcade <password from hub.json>
 explorer \\192.168.1.50\arcade
 ```
 
-If that fails: `ping 192.168.1.50` and `Test-NetConnection 192.168.1.50 -Port 445`. The PC must be `192.168.1.x` (same LAN as ac-box).
+If that fails: `ping 192.168.1.50` and `Test-NetConnection 192.168.1.50 -Port 445`. The PC must be `192.168.1.x` (same LAN as arcade-box).
 
 | After install | Path |
 | --- | --- |

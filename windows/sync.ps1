@@ -1,4 +1,4 @@
-# Pull /srv/arcade from ac-box via SMB. No WSL.
+# Pull /srv/arcade from arcade-box via SMB. No WSL.
 #   .\sync.ps1
 #   .\sync.ps1 -PushSaves
 

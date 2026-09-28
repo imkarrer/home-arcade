@@ -2,7 +2,7 @@
 """Download the Mindustry Windows client and a Windows JRE onto the hub's
 station export. Not for git.
 
-Client only, since homelab ADR 0009 step 2 (18 Sep 2026): the server ac-box
+Client only, since homelab ADR 0009 step 2 (18 Sep 2026): the server arcade-box
 runs is the flox environment's mindustry-server (catalog 159.3), pulled as a
 generation of imkarrer/arcade, so this script no longer fetches
 server-release.jar into /var/lib/arcade/mindustry. The copy it used to put
