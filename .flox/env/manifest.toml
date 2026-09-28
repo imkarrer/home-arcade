@@ -1,12 +1,13 @@
 # home-arcade as a flox environment (homelab ADR 0009, step 2).
 #
-# This file is the tenant: the two dedicated game servers ac-box runs for the
-# kids' LAN, spelled as packages instead of Nix. Since 18 Sep 2026 12:34 CDT
-# the box runs both from this environment (generation N of imkarrer/arcade,
-# pulled by homelab's arcade-environment-pull; modules/arcade-hub.nix is the
-# unit skeleton only). It reproduces the SAME two processes the module ran,
-# read from the live units on 18 Sep 2026
-# (`systemctl cat arcade-freeciv arcade-mindustry` on ac-box): freeciv-server
+# This file is the tenant: the two dedicated game servers arcade-box runs for
+# the kids' LAN, spelled as packages instead of Nix. Since 18 Sep 2026 12:34
+# CDT both run from this environment (generation N of imkarrer/arcade, pulled
+# by homelab's arcade-environment-pull; on the Z840 until the 26 Sep cutover).
+# It reproduces the SAME two processes this tree's modules/arcade-hub.nix ran
+# until then (the module left on 19 Sep; the unit skeleton is homelab's), read
+# from the live units on 18 Sep 2026
+# (`systemctl cat arcade-freeciv arcade-mindustry` on the Z840): freeciv-server
 # 3.2.2 bound to the LAN address on :5556, and a Mindustry dedicated server
 # (build 159) hosting Islands/sandbox on :6567, fed its console commands on
 # stdin. It is also, unchanged in role, the CI shell scripts/ci_test.sh runs
@@ -19,7 +20,7 @@
 #
 # What is NOT here, on purpose: the LAN address, the ports, the state
 # directory, the slice, User=, Restart=, the firewall rules and the SMB/rsync
-# export. Those are host facts (homelab's hosts/ac-box/{tenants,
+# export. Those are host facts (homelab's hosts/arcade-box/{tenants,
 # configuration}.nix) and stay in the closure's unit stubs -- ADR 0009 says
 # the manifest has no vocabulary for them and invents none. See "Services"
 # below for how they reach each process.
@@ -57,7 +58,7 @@ freeciv.pkg-group = "freeciv"
 # activate -- mindustry-server` the unit's main PID is java itself (proven
 # on WSL 18 Sep 2026: TCP+UDP 6567 and UDP 20151 open, SIGTERM -> exit 143).
 # JVM flags reach it through JAVA_TOOL_OPTIONS (the stub sets -Xms256M
-# -Xmx1G, as the module does). Own pkg-group, same reason as freeciv.
+# -Xmx1G, as the module did). Own pkg-group, same reason as freeciv.
 mindustry-server.pkg-path = "mindustry-server"
 mindustry-server.version = "159.3"
 mindustry-server.pkg-group = "mindustry"
@@ -109,7 +110,7 @@ python312Full.pkg-path = "python312Full"
 ##                       JAVA_TOOL_OPTIONS=-Xms256M -Xmx1G in Environment=.
 ##                       Mindustry takes startup commands on stdin, one per
 ##                       line, and treats argv as a single joined command,
-##                       which is why the module pipes printf into java.
+##                       which is why the module piped printf into java.
 ##
 ## The two blocks below run the same binaries for a developer, on loopback,
 ## with state under the environment's own cache (gitignored), and every
