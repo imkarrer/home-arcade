@@ -58,10 +58,11 @@ push step below):
 The tenant gate is what stands between a manifest edit and the box: a package
 the lock lost, or a locked build that does not start, goes red here before it
 can become a generation. The plugin pushes every output the lock names to
-MinIO (`s3-cache-push: true`), so the box's pull substitutes rather than
-builds (homelab `docs/flox-findings.md` section 1); for these two catalog
-packages `cache.nixos.org` carries the same paths, so the box needs nothing
-from MinIO for them.
+the CI cache (`s3-cache-push: true`; which cache is the agent's `S3_CACHE_*`,
+never this pipeline's -- homelab ADR 0013), so the box's pull substitutes
+rather than builds (homelab `docs/flox-findings.md` section 1); for these two
+catalog packages `cache.nixos.org` carries the same paths, so the box needs
+nothing from the CI cache for them.
 
 Local, the same gate the hub runs (fetches the pinned flox 1.14.0 from the
 hub's lock, checks the lock covers the manifest, runs `ci_test.sh` inside the
