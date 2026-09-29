@@ -9,11 +9,13 @@
 agents:
   queue: self
 
+# The CI cache's identity -- bucket, endpoint, region, public key -- is the
+# agent's, not this file's. A step that names none gets the agent's own
+# S3_CACHE_* (ac-host's compose, homelab's ci-env over its defaults), so
+# the cache moves server with the agent (homelab ADR 0013); a step that
+# named one would go on pushing to that server, with the new server's key,
+# and fail. What a step says here is only whether it pushes.
 flox_plugin: &flox
-  s3-cache-bucket: flox-binary-cache
-  s3-cache-endpoint: http://minio:9000
-  s3-cache-region: us-east-1
-  s3-cache-public-key: "flox-binary-cache-1:pSpP6x540XtBh+IMvmW8XrRHJDtIi+b31uvvIA0PyR0="
   s3-cache-push: true
 
 steps:
@@ -24,8 +26,8 @@ steps:
   # tenant (homelab ADR 0009, step 2): the same manifest and lock become
   # what arcade-box runs, so a package the lock lost, or a build that does not
   # start, goes red here and never becomes a generation. The plugin pushes
-  # every output the lock names to MinIO, so the box's pull can substitute
-  # rather than build (homelab docs/flox-findings.md section 1).
+  # every output the lock names to the CI cache, so the box's pull can
+  # substitute rather than build (homelab docs/flox-findings.md section 1).
   - label: ":python: Source checks + tenant gate"
     key: test
     command: bash scripts/ci_test.sh
@@ -57,7 +59,8 @@ steps:
   # Under the plugin for the same reasons as the gate: flox at the agent's
   # version, and the environment's python3 for the lock comparison. The
   # plugin re-activates the environment the test step already built and
-  # substituted, so this costs seconds; it does not push to MinIO again.
+  # substituted, so this costs seconds; it does not push to the CI cache
+  # again (s3-cache-push: false below).
   - label: ":flox: push the green environment to FloxHub (imkarrer/arcade)"
     key: push
     if: build.branch == "main"
