@@ -96,6 +96,7 @@ class CatalogTests(unittest.TestCase):
                 content = serv_file.read_text(encoding="utf-8")
                 self.assertIn("cmdlevel hack new", content)
                 # Verify the local_server args contain --read and the serv file path
+                local_server = game["local_server"]
                 args = local_server["args"]
                 self.assertIn("--read", args)
                 serv_index = args.index("--read")
