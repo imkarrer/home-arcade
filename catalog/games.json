@@ -104,15 +104,17 @@
       "id": "freeciv",
       "title": "Freeciv",
       "kind": "native",
-      "modes": ["solo"],
+      "modes": ["solo", "join"],
       "exe": "apps/windows/freeciv/freeciv-gtk3.22.exe",
-      "args": [
-        "--autoconnect",
-        "--server",
-        "{hub}",
-        "--port",
-        "5556"
-      ]
+      "args_by_mode": {
+        "solo": ["--autoconnect", "--server", "127.0.0.1", "--port", "5556"],
+        "join": ["--autoconnect", "--server", "{hub}", "--port", "5556"]
+      },
+      "local_server": {
+        "exe": "apps/windows/freeciv/freeciv-server.exe",
+        "port": 5556,
+        "args": ["--bind", "127.0.0.1", "--port", "5556", "--saves", "{saves}/freeciv", "--quitidle", "120"]
+      }
     },
     {
       "id": "mindustry",

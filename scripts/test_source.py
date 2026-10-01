@@ -68,6 +68,28 @@ class CatalogTests(unittest.TestCase):
             if game["core"] == DOS_CORE:
                 self.assertTrue(game.get("boot"), f"{gid} needs a boot file")
 
+    def test_native_mode_args_and_local_server(self):
+        for game in load_catalog():
+            if "args_by_mode" in game:
+                self.assertIsInstance(game["args_by_mode"], dict)
+                self.assertTrue(set(game["args_by_mode"].keys()) <= set(game["modes"]))
+                for mode, args in game["args_by_mode"].items():
+                    self.assertIsInstance(args, list)
+                    self.assertTrue(args)
+                    self.assertTrue(all(isinstance(arg, str) for arg in args))
+            if "local_server" in game:
+                self.assertIn("solo", game["modes"])
+                local_server = game["local_server"]
+                self.assertTrue(local_server["exe"].startswith("apps/"))
+                self.assertFalse(Path(local_server["exe"]).is_absolute())
+                self.assertIsInstance(local_server["port"], int)
+                self.assertIsInstance(local_server["args"], list)
+                for arg in local_server["args"]:
+                    self.assertIsInstance(arg, str)
+            if game["id"] == "freeciv":
+                self.assertIn("args_by_mode", game)
+                self.assertIn("local_server", game)
+
     def test_rom_paths_are_not_absolute(self):
         for game in load_catalog():
             if game.get("kind") == "native" or game.get("exe"):
