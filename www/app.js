@@ -1,6 +1,7 @@
 const app = document.getElementById("app");
 const navPlay = document.getElementById("nav-play");
 const navSettings = document.getElementById("nav-settings");
+const playerDiv = document.getElementById("player");
 
 function route() {
   const hash = location.hash || "#/";
@@ -8,6 +9,48 @@ function route() {
   navSettings.classList.toggle("active", hash === "#/settings");
   if (hash === "#/settings") renderSettings();
   else renderPlay();
+}
+
+async function renderPlayer() {
+  try {
+    const data = await api("/api/players");
+    playerDiv.innerHTML = `
+      Playing as
+      <select id="player-select">
+        ${data.players.map(p => `<option value="${p}" ${p === data.current ? "selected" : ""}>${p}</option>`).join("")}
+      </select>
+      <button id="new-guest">New guest</button>
+    `;
+    document.getElementById("player-select").addEventListener("change", async (e) => {
+      try {
+        await api("/api/player", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: e.target.value })
+        });
+        renderPlayer();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+    document.getElementById("new-guest").addEventListener("click", async () => {
+      const name = prompt("Guest name?");
+      if (name) {
+        try {
+          await api("/api/player", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name })
+          });
+          renderPlayer();
+        } catch (err) {
+          alert(err.message);
+        }
+      }
+    });
+  } catch (err) {
+    playerDiv.innerHTML = '<p class="error">' + err.message + "</p>";
+  }
 }
 
 async function api(path, opts) {
@@ -150,4 +193,5 @@ async function fillFiles(block, game) {
 }
 
 window.addEventListener("hashchange", route);
+renderPlayer();
 route();
