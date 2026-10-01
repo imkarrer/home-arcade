@@ -12,6 +12,17 @@
       ]
     },
     {
+      "id": "goldeneye_007",
+      "title": "GoldenEye 007",
+      "core": "mupen64plus_next_libretro.dll",
+      "rom": "roms/n64/goldeneye_007.z64",
+      "rom_alts": [
+        "roms/n64/GoldenEye 007.z64",
+        "roms/n64/goldeneye.z64",
+        "roms/n64/goldeneye_007.n64"
+      ]
+    },
+    {
       "id": "super_mario_kart",
       "title": "Super Mario Kart",
       "core": "snes9x_libretro.dll",
