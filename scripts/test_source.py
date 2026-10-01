@@ -89,6 +89,18 @@ class CatalogTests(unittest.TestCase):
             if game["id"] == "freeciv":
                 self.assertIn("args_by_mode", game)
                 self.assertIn("local_server", game)
+                # Verify the freeciv-local.serv file exists and contains the correct line
+                serv_file = ROOT / "catalog" / "freeciv-local.serv"
+                self.assertTrue(serv_file.is_file())
+                # Read the file and check that it contains the expected command line
+                content = serv_file.read_text(encoding="utf-8")
+                self.assertIn("cmdlevel hack new", content)
+                # Verify the local_server args contain --read and the serv file path
+                args = local_server["args"]
+                self.assertIn("--read", args)
+                serv_index = args.index("--read")
+                self.assertTrue(serv_index + 1 < len(args))
+                self.assertEqual(args[serv_index + 1], "{root}/catalog/freeciv-local.serv")
 
     def test_mode_labels(self):
         for game in load_catalog():
