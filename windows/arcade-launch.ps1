@@ -71,6 +71,7 @@ function Get-ArcadeCatalog {
             boot      = $boot
             ready     = $ready
             readyPath = $(if ($native) { $native } else { $rom })
+            modeLabels = $game.mode_labels
         }
     }
     return $out

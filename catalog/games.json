@@ -114,6 +114,10 @@
         "exe": "apps/windows/freeciv/freeciv-server.exe",
         "port": 5556,
         "args": ["--bind", "127.0.0.1", "--port", "5556", "--saves", "{saves}/freeciv", "--quitidle", "120"]
+      },
+      "mode_labels": {
+        "solo": "On this PC",
+        "join": "With family"
       }
     },
     {
