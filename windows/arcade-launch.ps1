@@ -421,6 +421,10 @@ function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScr
             Start-ArcadeLocalServer $game $mode
         }
         $list = if ($game.args_by_mode -and $game.args_by_mode.$mode) { $game.args_by_mode.$mode } else { $game.args }
+        if ((@($list) -join ' ') -like '*{join}*') {
+            if (-not $joinHost) { throw "Need the other PC IP to join." }
+            Save-StationProp "joinHost" $joinHost
+        }
         $argList = Expand-ArcadeArgs $list $joinHost
         Start-Process -FilePath $native -WorkingDirectory (Split-Path $native) -ArgumentList $argList
         return
