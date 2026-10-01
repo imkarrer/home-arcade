@@ -189,6 +189,9 @@ function Get-ArcadePlayers {
 }
 
 function Set-ArcadePlayer([string]$name) {
+    # Move legacy saves if needed
+    Move-ArcadeLegacySaves
+    
     $trimmed = $name.Trim()
     if ($trimmed -notmatch '^[A-Za-z0-9 _-]{1,24}$') {
         throw "Names are 1-24 letters, digits, spaces, - or _."
@@ -247,6 +250,66 @@ function Write-ArcadePlayerCfg {
     "savefile_directory = ""<$dir>""" | Out-File -FilePath $cfg -Encoding ASCII
     "savestate_directory = ""<$states>""" | Out-File -FilePath $cfg -Encoding ASCII -Append
     return $cfg
+}
+
+function Move-ArcadeLegacySaves {
+    # Only run if station.json has no "players" property yet and $root\saves exists
+    if (-not (Test-Path $script:stationPath)) {
+        return
+    }
+    
+    $st = Get-Content $script:stationPath -Raw | ConvertFrom-Json
+    if ($st.players) {
+        # Players property already exists, don't move saves
+        return
+    }
+    
+    if (-not (Test-Path (Join-Path $root "saves"))) {
+        # No legacy saves to move
+        return
+    }
+    
+    # Get the current player (will be first player if none exists)
+    $currentPlayers = Get-ArcadePlayers
+    $currentPlayerName = $currentPlayers.current
+    $slug = $currentPlayerName.ToLowerInvariant() -replace '[^a-z0-9]+', '-', -replace '^-', '' -replace '-$', ''
+    $destDir = Join-Path $root "saves\$slug"
+    
+    # Ensure destination directory exists
+    New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+    
+    # Move files from $root\saves to $destDir
+    $savesDir = Join-Path $root "saves"
+    Get-ChildItem -Path $savesDir -File | ForEach-Object {
+        $fileName = $_.Name
+        $destPath = Join-Path $destDir $fileName
+        
+        # Skip if file already exists in destination
+        if (-not (Test-Path $destPath)) {
+            Move-Item -Path $_.FullName -Destination $destPath
+        }
+    }
+    
+    # Handle freeciv folder if present
+    $freecivDir = Join-Path $savesDir "freeciv"
+    if (Test-Path $freecivDir) {
+        $destFreecivDir = Join-Path $destDir "freeciv"
+        New-Item -ItemType Directory -Force -Path $destFreecivDir | Out-Null
+        
+        # Move files from freeciv folder to destination
+        Get-ChildItem -Path $freecivDir -File | ForEach-Object {
+            $fileName = $_.Name
+            $destPath = Join-Path $destFreecivDir $fileName
+            
+            # Skip if file already exists in destination
+            if (-not (Test-Path $destPath)) {
+                Move-Item -Path $_.FullName -Destination $destPath
+            }
+        }
+    }
+    
+    # Save players property so it never runs again
+    Save-StationProp "players" $currentPlayers.players
 }
 
 function Get-UseLayout([string]$gameId, [int]$players) {
@@ -348,6 +411,9 @@ function Start-ArcadeLocalServer($game) {
 }
 
 function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScreen) {
+    # Move legacy saves if needed
+    Move-ArcadeLegacySaves
+    
     $native = Resolve-ArcadeNative $game
     if ($native) {
         if ($mode -eq "solo" -and $game.local_server) { Start-ArcadeLocalServer $game }
