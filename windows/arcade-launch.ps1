@@ -218,14 +218,21 @@ function Write-CropPreset($rect) {
     return $preset
 }
 
+function Expand-ArcadeArgs($list) {
+    $hub = Get-ArcadeHubHost
+    $saves = Join-Path $root "saves"
+    $out = @()
+    foreach ($a in @($list)) {
+        $out += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root).Replace("{saves}", $saves)
+    }
+    return ,$out
+}
+
 function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScreen) {
     $native = Resolve-ArcadeNative $game
     if ($native) {
-        $hub = Get-ArcadeHubHost
-        $argList = @()
-        foreach ($a in @($game.args)) {
-            $argList += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root)
-        }
+        $list = if ($game.args_by_mode -and $game.args_by_mode.$mode) { $game.args_by_mode.$mode } else { $game.args }
+        $argList = Expand-ArcadeArgs $list
         Start-Process -FilePath $native -WorkingDirectory (Split-Path $native) -ArgumentList $argList
         return
     }
