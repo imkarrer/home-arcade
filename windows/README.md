@@ -31,6 +31,13 @@ If that fails: `ping 192.168.1.50` and `Test-NetConnection 192.168.1.50 -Port 44
 | Launch | Start: **Home Arcade** |
 | Re-sync | `%USERPROFILE%\arcade\sync.ps1` |
 
+## Players
+
+The top of Home Arcade shows **Playing as**: pick a persona, or **New guest** to add one. Personas live in station.json on that PC.
+Every game saves into %USERPROFILE%\arcade\saves\<persona>: RetroArch and DOS saves at the top, save states in states\, Freeciv in freeciv\. Mindustry keeps its own saves in %APPDATA%\Mindustry and is not per persona.
+Saves made before personas move into the first persona the first time a game starts.
+sync.ps1 pulls every persona's saves from the box; sync.ps1 -PushSaves copies them back.
+
 ## Freeciv
 
 **On this PC** starts a private Freeciv server on the station (127.0.0.1:5556, apps\windows\freeciv\freeciv-server.exe) and connects to it. Saves (Game > Save Game, or /save NAME in chat) land in %USERPROFILE%\arcade\saves.freeciv; reload one from the lobby with /load NAME. The server quits two minutes after the last player leaves. sync.ps1 never deletes saves (robocopy /E /XO); sync.ps1 -PushSaves copies them to the box.
