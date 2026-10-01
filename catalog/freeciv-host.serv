@@ -1,0 +1,2 @@
+# Read by a station's freeciv-server in Host mode: the host's own client connects first and gets full access; friends who join stay basic.
+cmdlevel hack first

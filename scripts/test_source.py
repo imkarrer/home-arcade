@@ -83,25 +83,60 @@ class CatalogTests(unittest.TestCase):
                 self.assertTrue(local_server["exe"].startswith("apps/"))
                 self.assertFalse(Path(local_server["exe"]).is_absolute())
                 self.assertIsInstance(local_server["port"], int)
-                self.assertIsInstance(local_server["args"], list)
-                for arg in local_server["args"]:
-                    self.assertIsInstance(arg, str)
+                # Check for either args or args_by_mode
+                if "args" in local_server:
+                    self.assertIsInstance(local_server["args"], list)
+                    for arg in local_server["args"]:
+                        self.assertIsInstance(arg, str)
+                elif "args_by_mode" in local_server:
+                    self.assertIsInstance(local_server["args_by_mode"], dict)
+                    for mode, args in local_server["args_by_mode"].items():
+                        self.assertIsInstance(args, list)
+                        for arg in args:
+                            self.assertIsInstance(arg, str)
+                else:
+                    self.fail(f"local_server must have either 'args' or 'args_by_mode'")
             if game["id"] == "freeciv":
                 self.assertIn("args_by_mode", game)
                 self.assertIn("local_server", game)
-                # Verify the freeciv-local.serv file exists and contains the correct line
-                serv_file = ROOT / "catalog" / "freeciv-local.serv"
+                # Verify the freeciv-host.serv file exists and contains the correct line
+                serv_file = ROOT / "catalog" / "freeciv-host.serv"
                 self.assertTrue(serv_file.is_file())
                 # Read the file and check that it contains the expected command line
                 content = serv_file.read_text(encoding="utf-8")
-                self.assertIn("cmdlevel hack new", content)
-                # Verify the local_server args contain --read and the serv file path
+                self.assertIn("cmdlevel hack first", content)
+                # Verify the local_server args_by_mode contains host key with 0.0.0.0 and --read
                 local_server = game["local_server"]
-                args = local_server["args"]
-                self.assertIn("--read", args)
-                serv_index = args.index("--read")
-                self.assertTrue(serv_index + 1 < len(args))
-                self.assertEqual(args[serv_index + 1], "{root}/catalog/freeciv-local.serv")
+                args_by_mode = local_server["args_by_mode"]
+                self.assertIn("host", args_by_mode)
+                host_args = args_by_mode["host"]
+                self.assertIn("--bind", host_args)
+                bind_index = host_args.index("--bind")
+                self.assertTrue(bind_index + 1 < len(host_args))
+                self.assertEqual(host_args[bind_index + 1], "0.0.0.0")
+                self.assertIn("--read", host_args)
+                read_index = host_args.index("--read")
+                self.assertTrue(read_index + 1 < len(host_args))
+                self.assertEqual(host_args[read_index + 1], "{root}/catalog/freeciv-host.serv")
+                # Verify the solo args contain 127.0.0.1 and --read
+                self.assertIn("solo", args_by_mode)
+                solo_args = args_by_mode["solo"]
+                self.assertIn("--bind", solo_args)
+                bind_index = solo_args.index("--bind")
+                self.assertTrue(bind_index + 1 < len(solo_args))
+                self.assertEqual(solo_args[bind_index + 1], "127.0.0.1")
+                self.assertIn("--read", solo_args)
+                read_index = solo_args.index("--read")
+                self.assertTrue(read_index + 1 < len(solo_args))
+                self.assertEqual(solo_args[read_index + 1], "{root}/catalog/freeciv-local.serv")
+                # Verify freeciv_family entry has {hub} in args
+                freeciv_family = None
+                for g in load_catalog():
+                    if g["id"] == "freeciv_family":
+                        freeciv_family = g
+                        break
+                self.assertIsNotNone(freeciv_family)
+                self.assertIn("{hub}", freeciv_family["args"])
 
     def test_mode_labels(self):
         for game in load_catalog():
