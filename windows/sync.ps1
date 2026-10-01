@@ -29,6 +29,16 @@ if ($PushSaves) {
 else {
     Write-Host "Pulling library <- \\$Hub\arcade -> $Local"
     Sync-FromHub $Hub $Local
+    $winSrc = Join-Path $Local "windows"
+    if (Test-Path $winSrc) {
+        foreach ($name in @("sync.ps1", "start-retroarch.ps1", "play.ps1", "arcade-smb.ps1", "arcade-agent.ps1", "arcade-launch.ps1")) {
+            $src = Join-Path $winSrc $name
+            if (Test-Path $src) {
+                Copy-Item $src (Join-Path $Local $name) -Force
+            }
+        }
+        Write-Host "Updated launcher scripts from the hub."
+    }
     $coreSrc = Join-Path $Local "cores\windows\x86_64"
     $coreDst = "C:\RetroArch-Win64\cores"
     if (Test-Path $coreSrc) {
