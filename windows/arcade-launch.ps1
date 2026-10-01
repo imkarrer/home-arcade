@@ -364,12 +364,12 @@ function Write-CropPreset($rect) {
     return $preset
 }
 
-function Expand-ArcadeArgs($list) {
+function Expand-ArcadeArgs($list, [string]$joinHost = "") {
     $hub = Get-ArcadeHubHost
     $saves = Get-ArcadePlayerSaves
     $out = @()
     foreach ($a in @($list)) {
-        $out += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root).Replace("{saves}", $saves)
+        $out += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root).Replace("{saves}", $saves).Replace("{join}", $joinHost)
     }
     return ,$out
 }
@@ -386,7 +386,7 @@ function Test-ArcadeLocalPort($port) {
     }
 }
 
-function Start-ArcadeLocalServer($game) {
+function Start-ArcadeLocalServer($game, [string]$mode) {
     $exe = Join-Path $root ($game.local_server.exe -replace "/", "\")
     if (-not (Test-Path $exe)) {
         throw "$($game.title)'s local server is not on this PC yet. Sync from the arcade server."
@@ -397,7 +397,8 @@ function Start-ArcadeLocalServer($game) {
     if (Test-ArcadeLocalPort $port) {
         return # a server from an earlier Play is still up (it quits on its own after --quitidle)
     }
-    Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -ArgumentList (Expand-ArcadeArgs $game.local_server.args) -WindowStyle Hidden
+    $args = if ($game.local_server.args_by_mode -and $game.local_server.args_by_mode.$mode) { $game.local_server.args_by_mode.$mode } else { $game.local_server.args }
+    Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -ArgumentList (Expand-ArcadeArgs $args) -WindowStyle Hidden
     $timeout = 15000 # 15 seconds
     $waitTime = 0
     while ($waitTime -lt $timeout) {
@@ -416,9 +417,11 @@ function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScr
     
     $native = Resolve-ArcadeNative $game
     if ($native) {
-        if ($mode -eq "solo" -and $game.local_server) { Start-ArcadeLocalServer $game }
+        if (($mode -eq "solo" -or $mode -eq "host") -and $game.local_server) { 
+            Start-ArcadeLocalServer $game $mode
+        }
         $list = if ($game.args_by_mode -and $game.args_by_mode.$mode) { $game.args_by_mode.$mode } else { $game.args }
-        $argList = Expand-ArcadeArgs $list
+        $argList = Expand-ArcadeArgs $list $joinHost
         Start-Process -FilePath $native -WorkingDirectory (Split-Path $native) -ArgumentList $argList
         return
     }
