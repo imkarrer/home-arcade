@@ -239,6 +239,16 @@ function Get-ArcadePlayerSaves {
     return $dir
 }
 
+function Write-ArcadePlayerCfg {
+    $dir = Get-ArcadePlayerSaves
+    $states = Join-Path $dir "states"
+    New-Item -ItemType Directory -Force -Path $states | Out-Null
+    $cfg = Join-Path $dir "retroarch-player.cfg"
+    "savefile_directory = ""<$dir>""" | Out-File -FilePath $cfg -Encoding ASCII
+    "savestate_directory = ""<$states>""" | Out-File -FilePath $cfg -Encoding ASCII -Append
+    return $cfg
+}
+
 function Get-UseLayout([string]$gameId, [int]$players) {
     $path = Join-Path $root "metadata\crops\$gameId.yaml"
     if (Test-Path $path) {
@@ -358,7 +368,8 @@ function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScr
     Save-StationProp "splitView" $pref
 
     $raArgs = @("-f")
-    if (Test-Path $script:cfg) { $raArgs += @("--appendconfig", $script:cfg) }
+    $playerCfg = Write-ArcadePlayerCfg
+    if (Test-Path $script:cfg) { $raArgs += @("--appendconfig", "$($script:cfg)|$playerCfg") } else { $raArgs += @("--appendconfig", $playerCfg) }
     $raArgs += @("-L", $core)
     if ($mode -eq "host") {
         $raArgs += "--host"
