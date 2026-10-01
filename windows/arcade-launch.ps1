@@ -167,6 +167,78 @@ function Save-StationProp([string]$name, $value) {
     $obj | ConvertTo-Json | Set-Content -Path $script:stationPath -Encoding utf8
 }
 
+function Get-ArcadePlayers {
+    $players = @()
+    $current = ""
+    if (Test-Path $script:stationPath) {
+        $st = Get-Content $script:stationPath -Raw | ConvertFrom-Json
+        if ($st.players -and $st.players -is [System.Array]) {
+            $players = $st.players
+        }
+        if ($st.player -and $players -contains $st.player) {
+            $current = $st.player
+        }
+    }
+    if ($players.Count -eq 0) {
+        $players = @("Player 1")
+    }
+    if ($current -eq "") {
+        $current = $players[0]
+    }
+    return [ordered]@{ current = $current; players = @($players) }
+}
+
+function Set-ArcadePlayer([string]$name) {
+    $trimmed = $name.Trim()
+    if ($trimmed -notmatch '^[A-Za-z0-9 _-]{1,24}$') {
+        throw "Names are 1-24 letters, digits, spaces, - or _."
+    }
+    
+    $players = @()
+    $current = ""
+    
+    if (Test-Path $script:stationPath) {
+        $st = Get-Content $script:stationPath -Raw | ConvertFrom-Json
+        if ($st.players -and $st.players -is [System.Array]) {
+            $players = $st.players
+        }
+        if ($st.player -and $players -contains $st.player) {
+            $current = $st.player
+        }
+    } else {
+        # Create station.json if it doesn't exist
+        $obj = [ordered]@{}
+        $obj | ConvertTo-Json | Set-Content -Path $script:stationPath -Encoding utf8
+    }
+    
+    # Check if player already exists (case-insensitive)
+    $exists = $false
+    foreach ($p in $players) {
+        if ($p -ieq $trimmed) {
+            $exists = $true
+            $trimmed = $p  # Keep the existing spelling
+            break
+        }
+    }
+    
+    if (-not $exists) {
+        $players += $trimmed
+    }
+    
+    Save-StationProp "players" $players
+    Save-StationProp "player" $trimmed
+    
+    return Get-ArcadePlayers
+}
+
+function Get-ArcadePlayerSaves {
+    $currentPlayer = Get-ArcadePlayers
+    $slug = $currentPlayer.current.ToLowerInvariant() -replace '[^a-z0-9]+', '-', -replace '^-', '' -replace '-$', ''
+    $dir = Join-Path $root "saves\$slug"
+    New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    return $dir
+}
+
 function Get-UseLayout([string]$gameId, [int]$players) {
     $path = Join-Path $root "metadata\crops\$gameId.yaml"
     if (Test-Path $path) {
@@ -221,7 +293,7 @@ function Write-CropPreset($rect) {
 
 function Expand-ArcadeArgs($list) {
     $hub = Get-ArcadeHubHost
-    $saves = Join-Path $root "saves"
+    $saves = Get-ArcadePlayerSaves
     $out = @()
     foreach ($a in @($list)) {
         $out += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root).Replace("{saves}", $saves)
@@ -246,7 +318,8 @@ function Start-ArcadeLocalServer($game) {
     if (-not (Test-Path $exe)) {
         throw "$($game.title)'s local server is not on this PC yet. Sync from the arcade server."
     }
-    New-Item -ItemType Directory -Force -Path (Join-Path $root "saves\$($game.id)") | Out-Null
+    $savesDir = Get-ArcadePlayerSaves
+    New-Item -ItemType Directory -Force -Path (Join-Path $savesDir $game.id) | Out-Null
     $port = [int]$game.local_server.port
     if (Test-ArcadeLocalPort $port) {
         return # a server from an earlier Play is still up (it quits on its own after --quitidle)
