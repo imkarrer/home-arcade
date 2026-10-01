@@ -7,4 +7,4 @@
 label = "delegate:local"
 base = "main"
 gate = "flox activate -- bash -c 'python3 scripts/assert-no-content.py && python3 -m unittest discover -s scripts -p \"test_*.py\" -v'"
-merge = "manual"                     # PR only: a merge to main runs the FloxHub push and homelab trigger, so a human merges
+merge = "auto"                       # the watcher squash-merges on green (owner, 2026-10-01: "you merge them")
