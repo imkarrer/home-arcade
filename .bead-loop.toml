@@ -1,0 +1,10 @@
+# bead-loop (~/src/bead-loop): which beads the loop works here, and how a worktree is proven.
+# Stages, lanes and the research round come from ~/.config/bead-loop/config.toml.
+# The gate is CI's source half (scripts/ci_test.sh minus the tenant gate): the catalog,
+# crops, www and script checks, inside this tree's flox environment for python3. The
+# tenant gate starts mindustry-server and stays CI's: the loop never changes .flox/.
+# The PowerShell under windows/ has no runner here (no pwsh); its beads carry grep checks.
+label = "delegate:local"
+base = "main"
+gate = "flox activate -- bash -c 'python3 scripts/assert-no-content.py && python3 -m unittest discover -s scripts -p \"test_*.py\" -v'"
+merge = "manual"                     # PR only: a merge to main runs the FloxHub push and homelab trigger, so a human merges
