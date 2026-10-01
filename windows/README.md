@@ -33,6 +33,6 @@ If that fails: `ping 192.168.1.50` and `Test-NetConnection 192.168.1.50 -Port 44
 
 ## Freeciv
 
-**On this PC** starts a private Freeciv server on the station (127.0.0.1:5556, apps\windows\freeciv\freeciv-server.exe) and connects to it. Saves (Game > Save Game, or /save NAME in chat) land in %USERPROFILE%\arcade\saves\freeciv; reload one from the lobby with /load NAME. The server quits two minutes after the last player leaves. sync.ps1 never deletes saves (robocopy /E /XO); sync.ps1 -PushSaves copies them to the box.
+**On this PC** starts a private Freeciv server on the station (127.0.0.1:5556, apps\windows\freeciv\freeciv-server.exe) and connects to it. Saves (Game > Save Game, or /save NAME in chat) land in %USERPROFILE%\arcade\saves.freeciv; reload one from the lobby with /load NAME. The server quits two minutes after the last player leaves. sync.ps1 never deletes saves (robocopy /E /XO); sync.ps1 -PushSaves copies them to the box.
 
 **With family** connects to the one shared server on arcade-box (192.168.1.50:5556): one game for everyone, saved on the box.
