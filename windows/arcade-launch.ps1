@@ -228,9 +228,45 @@ function Expand-ArcadeArgs($list) {
     return ,$out
 }
 
+function Test-ArcadeLocalPort($port) {
+    try {
+        $tcp = New-Object System.Net.Sockets.TcpClient
+        $tcp.Connect("127.0.0.1", $port)
+        $tcp.Close()
+        $tcp.Dispose()
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Start-ArcadeLocalServer($game) {
+    $exe = Join-Path $root ($game.local_server.exe -replace "/", "\\")
+    if (-not (Test-Path $exe)) {
+        throw "$($game.title)'s local server is not on this PC yet. Sync from the arcade server."
+    }
+    New-Item -ItemType Directory -Force -Path (Join-Path $root "saves\$($game.id)") | Out-Null
+    $port = [int]$game.local_server.port
+    if (Test-ArcadeLocalPort $port) {
+        return # a server from an earlier Play is still up (it quits on its own after --quitidle)
+    }
+    Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -ArgumentList (Expand-ArcadeArgs $game.local_server.args) -WindowStyle Hidden
+    $timeout = 15000 # 15 seconds
+    $waitTime = 0
+    while ($waitTime -lt $timeout) {
+        if (Test-ArcadeLocalPort $port) {
+            return
+        }
+        Start-Sleep -Milliseconds 250
+        $waitTime += 250
+    }
+    throw "$($game.title)'s local server did not start."
+}
+
 function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScreen) {
     $native = Resolve-ArcadeNative $game
     if ($native) {
+        if ($mode -eq "solo" -and $game.local_server) { Start-ArcadeLocalServer $game }
         $list = if ($game.args_by_mode -and $game.args_by_mode.$mode) { $game.args_by_mode.$mode } else { $game.args }
         $argList = Expand-ArcadeArgs $list
         Start-Process -FilePath $native -WorkingDirectory (Split-Path $native) -ArgumentList $argList
