@@ -40,6 +40,8 @@ sync.ps1 pulls every persona's saves from the box; sync.ps1 -PushSaves copies th
 
 ## Freeciv
 
-**On this PC** starts a private Freeciv server on the station (127.0.0.1:5556, apps\windows\freeciv\freeciv-server.exe) and connects to it. Saves (Game > Save Game, or /save NAME in chat) land in %USERPROFILE%\arcade\saves.freeciv; reload one from the lobby with /load NAME. The server quits two minutes after the last player leaves. sync.ps1 never deletes saves (robocopy /E /XO); sync.ps1 -PushSaves copies them to the box.
-
-**With family** connects to the one shared server on arcade-box (192.168.1.50:5556): one game for everyone, saved on the box.
+**Play**: a private game on this PC (only this PC can connect); you have full control: /save NAME, /load NAME, /endgame.
+**Host**: a game on this PC that friends on the home network can join; the host has full control, friends are players. Needs the firewall rule install.ps1 adds when run as administrator.
+**Join a friend**: type the host PC's IP in the join box.
+**Freeciv: family game**: the one shared server on arcade-box (192.168.1.50:5556); everyone joins the same game.
+Saves go to the current persona's folder, saves\<persona>\freeciv; the server quits two minutes after the last player leaves.
