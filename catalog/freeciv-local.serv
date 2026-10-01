@@ -1,5 +1,2 @@
-cmdlevel hack new
-# Read by the station's local freeciv-server (--read): it binds 127.0.0.1, so only this PC connects.
-cmdlevel hack new
 # Read by the station's local freeciv-server (--read): it binds 127.0.0.1, so only this PC connects.
 cmdlevel hack new
