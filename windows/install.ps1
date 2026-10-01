@@ -154,6 +154,16 @@ $station | ConvertTo-Json | Set-Content -Path $stationPath -Encoding utf8
 
 New-HomeArcadeShortcut -RaExe $ra -PlayPs1 (Join-Path $Local "play.ps1")
 
+$fcServer = Join-Path $Local "apps\windows\freeciv\freeciv-server.exe"
+if (([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    $rule = Get-NetFirewallRule -DisplayName 'Home Arcade Freeciv' -ErrorAction SilentlyContinue
+    if (-not $rule) {
+        New-NetFirewallRule -DisplayName 'Home Arcade Freeciv' -Direction Inbound -Program $fcServer -Protocol TCP -LocalPort 5556 -Profile Private -Action Allow | Out-Null
+    }
+} else {
+    Write-Host "To host Freeciv games, re-run install.ps1 as administrator once (firewall rule for port 5556)."
+}
+
 Write-Host ""
 Write-Host "Install complete. This PC is $StationId"
 Write-Host "Open Start and search:  Home Arcade"
