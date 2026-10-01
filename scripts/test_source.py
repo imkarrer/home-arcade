@@ -90,6 +90,14 @@ class CatalogTests(unittest.TestCase):
                 self.assertIn("args_by_mode", game)
                 self.assertIn("local_server", game)
 
+    def test_mode_labels(self):
+        for game in load_catalog():
+            if "mode_labels" in game:
+                self.assertTrue(set(game["mode_labels"].keys()) <= set(game["modes"]))
+                for key, value in game["mode_labels"].items():
+                    self.assertIsInstance(value, str)
+                    self.assertTrue(value.strip())
+
     def test_rom_paths_are_not_absolute(self):
         for game in load_catalog():
             if game.get("kind") == "native" or game.get("exe"):

@@ -39,7 +39,7 @@ async function renderPlay() {
       for (const mode of modes) {
         const btn = document.createElement("button");
         btn.className = cls[mode] || "play";
-        btn.textContent = labels[mode] || mode;
+        btn.textContent = (game.modeLabels && game.modeLabels[mode]) || labels[mode] || mode;
         btn.disabled = !game.ready;
         btn.addEventListener("click", () => play(game.id, mode));
         actions.appendChild(btn);
