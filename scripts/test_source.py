@@ -153,6 +153,9 @@ class WwwTests(unittest.TestCase):
         self.assertTrue((ROOT / "www" / "style.css").is_file())
         self.assertIn("/api/games", js)
         self.assertIn("/api/play", js)
+        self.assertIn("/api/players", js)
+        self.assertIn("/api/player", js)
+        self.assertIn('id="player"', html)
 
 
 class HubExampleTests(unittest.TestCase):
