@@ -76,6 +76,15 @@ while ($listen.IsListening) {
             Send-Json $res @{ files = @(Get-ArcadeZipFiles $id) }
             continue
         }
+        if ($path -eq "/api/players") {
+            Send-Json $res (Get-ArcadePlayers)
+            continue
+        }
+        if ($path -eq "/api/player" -and $req.HttpMethod -eq "POST") {
+            $body = Read-Body $req | ConvertFrom-Json
+            Send-Json $res (Set-ArcadePlayer ([string]$body.name))
+            continue
+        }
         if ($path -eq "/api/boot" -and $req.HttpMethod -eq "POST") {
             $body = Read-Body $req | ConvertFrom-Json
             Save-ArcadeBoot $body.id $body.boot
