@@ -236,7 +236,7 @@ function Set-ArcadePlayer([string]$name) {
 
 function Get-ArcadePlayerSaves {
     $currentPlayer = Get-ArcadePlayers
-    $slug = $currentPlayer.current.ToLowerInvariant() -replace '[^a-z0-9]+', '-', -replace '^-', '' -replace '-$', ''
+    $slug = ($currentPlayer.current.ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
     $dir = Join-Path $root "saves\$slug"
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
     return $dir
@@ -247,8 +247,8 @@ function Write-ArcadePlayerCfg {
     $states = Join-Path $dir "states"
     New-Item -ItemType Directory -Force -Path $states | Out-Null
     $cfg = Join-Path $dir "retroarch-player.cfg"
-    "savefile_directory = ""<$dir>""" | Out-File -FilePath $cfg -Encoding ASCII
-    "savestate_directory = ""<$states>""" | Out-File -FilePath $cfg -Encoding ASCII -Append
+    "savefile_directory = ""$dir""" | Out-File -FilePath $cfg -Encoding ASCII
+    "savestate_directory = ""$states""" | Out-File -FilePath $cfg -Encoding ASCII -Append
     return $cfg
 }
 
@@ -272,7 +272,7 @@ function Move-ArcadeLegacySaves {
     # Get the current player (will be first player if none exists)
     $currentPlayers = Get-ArcadePlayers
     $currentPlayerName = $currentPlayers.current
-    $slug = $currentPlayerName.ToLowerInvariant() -replace '[^a-z0-9]+', '-', -replace '^-', '' -replace '-$', ''
+    $slug = ($currentPlayerName.ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
     $destDir = Join-Path $root "saves\$slug"
     
     # Ensure destination directory exists
@@ -387,7 +387,7 @@ function Test-ArcadeLocalPort($port) {
 }
 
 function Start-ArcadeLocalServer($game) {
-    $exe = Join-Path $root ($game.local_server.exe -replace "/", "\\")
+    $exe = Join-Path $root ($game.local_server.exe -replace "/", "\")
     if (-not (Test-Path $exe)) {
         throw "$($game.title)'s local server is not on this PC yet. Sync from the arcade server."
     }
