@@ -146,6 +146,19 @@ class CatalogTests(unittest.TestCase):
                     self.assertIsInstance(value, str)
                     self.assertTrue(value.strip())
 
+    def test_native_env_values_are_strings(self):
+        for game in load_catalog():
+            if "env" not in game:
+                continue
+            self.assertIsInstance(game["env"], dict)
+            for name, value in game["env"].items():
+                self.assertRegex(name, r"^[A-Z][A-Z0-9_]*$")
+                self.assertIsInstance(value, str)
+
+    def test_mindustry_saves_in_the_profile(self):
+        mindustry = next(g for g in load_catalog() if g["id"] == "mindustry")
+        self.assertTrue(mindustry["env"]["MINDUSTRY_DATA_DIR"].startswith("{saves}/"))
+
     def test_rom_paths_are_not_absolute(self):
         for game in load_catalog():
             if game.get("kind") == "native" or game.get("exe"):
@@ -154,6 +167,19 @@ class CatalogTests(unittest.TestCase):
             for alt in game.get("rom_alts") or []:
                 self.assertFalse(Path(alt).is_absolute())
                 self.assertTrue(alt.startswith("roms/"))
+
+
+class PlayerTests(unittest.TestCase):
+    def test_family_roster(self):
+        data = json.loads((ROOT / "catalog" / "players.json").read_text(encoding="utf-8"))
+        players = data["players"]
+        ids = [p["id"] for p in players]
+        self.assertEqual(len(ids), len(set(ids)))
+        self.assertEqual([p["name"] for p in players], ["Dad", "Mom", "Calvin", "Ivy", "Faye"])
+        for p in players:
+            # The launcher's id for a name, and what sync accepts as a folder.
+            self.assertEqual(p["id"], re.sub(r"[^a-z0-9]+", "-", p["name"].lower()).strip("-"))
+            self.assertRegex(p["id"], r"^[a-z0-9-]{1,24}$")
 
 
 class CropTests(unittest.TestCase):

@@ -4,6 +4,7 @@ $ErrorActionPreference = "Stop"
 if (-not $root) {
     $root = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Path }
 }
+. (Join-Path $root "arcade-smb.ps1")
 
 $script:stationPath = Join-Path $root "station.json"
 $script:catalogPath = Join-Path $root "catalog\games.json"
@@ -161,85 +162,103 @@ function Save-ArcadeBoot([string]$gameId, [string]$boot) {
 }
 
 function Save-StationProp([string]$name, $value) {
-    if (-not (Test-Path $script:stationPath)) { return }
+    if (-not (Test-Path $script:stationPath)) { "{}" | Set-Content -Path $script:stationPath -Encoding utf8 }
     $obj = Get-Content $script:stationPath -Raw | ConvertFrom-Json
     $obj | Add-Member -NotePropertyName $name -NotePropertyValue $value -Force
     $obj | ConvertTo-Json | Set-Content -Path $script:stationPath -Encoding utf8
 }
 
-function Get-ArcadePlayers {
-    $players = @()
-    $current = ""
-    if (Test-Path $script:stationPath) {
-        $st = Get-Content $script:stationPath -Raw | ConvertFrom-Json
-        if ($st.players -and $st.players -is [System.Array]) {
-            $players = $st.players
-        }
-        if ($st.player -and $players -contains $st.player) {
-            $current = $st.player
-        }
-    }
-    if ($players.Count -eq 0) {
-        $players = @("Player 1")
-    }
-    if ($current -eq "") {
-        $current = $players[0]
-    }
-    return [ordered]@{ current = $current; players = @($players) }
+# A profile is a folder, saves\<id>, holding profile.json ({ "name": ... }).
+# catalog\players.json seeds the family; New profile on any PC adds one. Both
+# roam: the folder is pulled from the hub before a game starts and pushed back
+# when the game exits. Anything else under saves\ belongs to nobody.
+function Get-ArcadePlayerId([string]$name) {
+    return ($name.ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
 }
 
-function Set-ArcadePlayer([string]$name) {
-    # Move legacy saves if needed
-    Move-ArcadeLegacySaves
-    
-    $trimmed = $name.Trim()
-    if ($trimmed -notmatch '^[A-Za-z0-9 _-]{1,24}$') {
-        throw "Names are 1-24 letters, digits, spaces, - or _."
+function Get-ArcadeRoster {
+    $roster = [ordered]@{}
+    $seedPath = Join-Path $root "catalog\players.json"
+    if (Test-Path $seedPath) {
+        foreach ($p in (Get-Content $seedPath -Raw | ConvertFrom-Json).players) {
+            $roster[[string]$p.id] = [string]$p.name
+        }
     }
-    
-    $players = @()
+    $saves = Join-Path $root "saves"
+    if (Test-Path $saves) {
+        foreach ($dir in Get-ChildItem -Path $saves -Directory | Sort-Object Name) {
+            $file = Join-Path $dir.FullName "profile.json"
+            if ($roster.Contains($dir.Name) -or -not (Test-Path $file)) { continue }
+            $name = [string](Get-Content $file -Raw | ConvertFrom-Json).name
+            if ($name) { $roster[$dir.Name] = $name }
+        }
+    }
+    return $roster
+}
+
+function Get-ArcadePlayers {
+    $roster = Get-ArcadeRoster
     $current = ""
-    
     if (Test-Path $script:stationPath) {
         $st = Get-Content $script:stationPath -Raw | ConvertFrom-Json
-        if ($st.players -and $st.players -is [System.Array]) {
-            $players = $st.players
-        }
-        if ($st.player -and $players -contains $st.player) {
-            $current = $st.player
-        }
-    } else {
-        # Create station.json if it doesn't exist
-        $obj = [ordered]@{}
-        $obj | ConvertTo-Json | Set-Content -Path $script:stationPath -Encoding utf8
+        if ($st.player -and $roster.Contains([string]$st.player)) { $current = [string]$st.player }
     }
-    
-    # Check if player already exists (case-insensitive)
-    $exists = $false
-    foreach ($p in $players) {
-        if ($p -ieq $trimmed) {
-            $exists = $true
-            $trimmed = $p  # Keep the existing spelling
-            break
-        }
-    }
-    
-    if (-not $exists) {
-        $players += $trimmed
-    }
-    
-    Save-StationProp "players" $players
-    Save-StationProp "player" $trimmed
-    
+    if (-not $current -and $roster.Count) { $current = @($roster.Keys)[0] }
+    $players = @(foreach ($id in $roster.Keys) { [ordered]@{ id = $id; name = $roster[$id] } })
+    return [ordered]@{ current = $current; players = $players }
+}
+
+function Set-ArcadePlayer([string]$id) {
+    if (-not (Get-ArcadeRoster).Contains($id)) { throw "There is no profile $id on this PC." }
+    Save-StationProp "player" $id
     return Get-ArcadePlayers
 }
 
+function New-ArcadePlayer([string]$name) {
+    $trimmed = $name.Trim()
+    $id = Get-ArcadePlayerId $trimmed
+    if ($trimmed -notmatch '^[A-Za-z0-9 _-]{1,24}$' -or -not $id) {
+        throw "Names are 1-24 letters, digits, spaces, - or _."
+    }
+    if (-not (Get-ArcadeRoster).Contains($id)) {
+        $dir = Join-Path $root "saves\$id"
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        @{ name = $trimmed } | ConvertTo-Json | Set-Content -Path (Join-Path $dir "profile.json") -Encoding utf8
+        Start-ArcadeSavePush $id 0
+    }
+    return Set-ArcadePlayer $id
+}
+
 function Get-ArcadePlayerSaves {
-    $currentPlayer = Get-ArcadePlayers
-    $slug = ($currentPlayer.current.ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
-    $dir = Join-Path $root "saves\$slug"
+    $id = (Get-ArcadePlayers).current
+    if (-not $id) { throw "No profiles on this PC yet (catalog\players.json is missing). Sync from the arcade server." }
+    $dir = Join-Path $root "saves\$id"
     New-Item -ItemType Directory -Force -Path $dir | Out-Null
+    $file = Join-Path $dir "profile.json"
+    if (-not (Test-Path $file)) {
+        @{ name = (Get-ArcadeRoster)[$id] } | ConvertTo-Json | Set-Content -Path $file -Encoding utf8
+    }
     return $dir
+}
+
+# Before a game: the hub's copy of this profile, so saves made on another PC
+# are here. Hub away: play with what this PC has.
+function Update-ArcadePlayerSaves {
+    $id = (Get-ArcadePlayers).current
+    try { Sync-ArcadePlayerSaves -Hub (Get-ArcadeHubHost) -Local $root -PlayerId $id -Direction Pull }
+    catch { }
+}
+
+# After a game: push this profile's saves once the process exits, from a
+# hidden PowerShell so the agent keeps serving. A push that fails goes up the
+# next time Home Arcade opens (sync.ps1 pushes every profile).
+function Start-ArcadeSavePush([string]$id, [int]$waitPid) {
+    $sync = Join-Path $root "sync.ps1"
+    if (-not (Test-Path $sync)) { return }
+    $ps = Join-Path $env:WINDIR "System32\WindowsPowerShell\v1.0\powershell.exe"
+    $psArgs = @("-NoProfile", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-File", "`"$sync`"", "-Hub", (Get-ArcadeHubHost), "-Local", "`"$root`"", "-PushSaves", "-Player", $id)
+    if ($waitPid) { $psArgs += @("-WaitPid", "$waitPid") }
+    Start-Process -FilePath $ps -ArgumentList $psArgs -WindowStyle Hidden
 }
 
 function Write-ArcadePlayerCfg {
@@ -250,66 +269,6 @@ function Write-ArcadePlayerCfg {
     "savefile_directory = ""$dir""" | Out-File -FilePath $cfg -Encoding ASCII
     "savestate_directory = ""$states""" | Out-File -FilePath $cfg -Encoding ASCII -Append
     return $cfg
-}
-
-function Move-ArcadeLegacySaves {
-    # Only run if station.json has no "players" property yet and $root\saves exists
-    if (-not (Test-Path $script:stationPath)) {
-        return
-    }
-    
-    $st = Get-Content $script:stationPath -Raw | ConvertFrom-Json
-    if ($st.players) {
-        # Players property already exists, don't move saves
-        return
-    }
-    
-    if (-not (Test-Path (Join-Path $root "saves"))) {
-        # No legacy saves to move
-        return
-    }
-    
-    # Get the current player (will be first player if none exists)
-    $currentPlayers = Get-ArcadePlayers
-    $currentPlayerName = $currentPlayers.current
-    $slug = ($currentPlayerName.ToLowerInvariant() -replace '[^a-z0-9]+', '-').Trim('-')
-    $destDir = Join-Path $root "saves\$slug"
-    
-    # Ensure destination directory exists
-    New-Item -ItemType Directory -Force -Path $destDir | Out-Null
-    
-    # Move files from $root\saves to $destDir
-    $savesDir = Join-Path $root "saves"
-    Get-ChildItem -Path $savesDir -File | ForEach-Object {
-        $fileName = $_.Name
-        $destPath = Join-Path $destDir $fileName
-        
-        # Skip if file already exists in destination
-        if (-not (Test-Path $destPath)) {
-            Move-Item -Path $_.FullName -Destination $destPath
-        }
-    }
-    
-    # Handle freeciv folder if present
-    $freecivDir = Join-Path $savesDir "freeciv"
-    if (Test-Path $freecivDir) {
-        $destFreecivDir = Join-Path $destDir "freeciv"
-        New-Item -ItemType Directory -Force -Path $destFreecivDir | Out-Null
-        
-        # Move files from freeciv folder to destination
-        Get-ChildItem -Path $freecivDir -File | ForEach-Object {
-            $fileName = $_.Name
-            $destPath = Join-Path $destFreecivDir $fileName
-            
-            # Skip if file already exists in destination
-            if (-not (Test-Path $destPath)) {
-                Move-Item -Path $_.FullName -Destination $destPath
-            }
-        }
-    }
-    
-    # Save players property so it never runs again
-    Save-StationProp "players" $currentPlayers.players
 }
 
 function Get-UseLayout([string]$gameId, [int]$players) {
@@ -412,9 +371,9 @@ function Start-ArcadeLocalServer($game, [string]$mode) {
 }
 
 function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScreen) {
-    # Move legacy saves if needed
-    Move-ArcadeLegacySaves
-    
+    Update-ArcadePlayerSaves
+    $player = (Get-ArcadePlayers).current
+
     $native = Resolve-ArcadeNative $game
     if ($native) {
         if (($mode -eq "solo" -or $mode -eq "host") -and $game.local_server) { 
@@ -426,7 +385,22 @@ function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScr
             Save-StationProp "joinHost" $joinHost
         }
         $argList = Expand-ArcadeArgs $list $joinHost
-        Start-Process -FilePath $native -WorkingDirectory (Split-Path $native) -ArgumentList $argList
+        # Catalog "env": per-game variables for the child only (Mindustry's
+        # MINDUSTRY_DATA_DIR puts its saves in the profile's folder).
+        $envNames = @()
+        if ($game.env) {
+            foreach ($prop in $game.env.PSObject.Properties) {
+                $envNames += $prop.Name
+                Set-Item -Path "env:$($prop.Name)" -Value (Expand-ArcadeArgs @($prop.Value))[0]
+            }
+        }
+        try {
+            $proc = Start-Process -FilePath $native -WorkingDirectory (Split-Path $native) -ArgumentList $argList -PassThru
+        }
+        finally {
+            foreach ($name in $envNames) { Remove-Item -Path "env:$name" -ErrorAction SilentlyContinue }
+        }
+        Start-ArcadeSavePush $player $proc.Id
         return
     }
 
@@ -466,5 +440,6 @@ function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScr
     $raArgs += $rom
     $workDir = Split-Path $rom
     if (-not $workDir) { $workDir = Split-Path $script:ra }
-    Start-Process -FilePath $script:ra -WorkingDirectory $workDir -ArgumentList $raArgs
+    $proc = Start-Process -FilePath $script:ra -WorkingDirectory $workDir -ArgumentList $raArgs -PassThru
+    Start-ArcadeSavePush $player $proc.Id
 }
