@@ -19,7 +19,9 @@ function Connect-ArcadeShare {
         if ($hubCfg.password) { $pass = [string]$hubCfg.password }
     }
     $src = "\\$Hub\$Share"
-    if (Test-Path $src) { return $src }
+    # A share the current session may not open (arcade-saves refuses guests)
+    # answers Access denied; that means "map it with the password", not stop.
+    if (Test-Path $src -ErrorAction SilentlyContinue) { return $src }
     if ($pass) {
         cmd /c "net use `"$src`" /delete /y" | Out-Null
         cmd /c "net use `"$src`" /user:$user $pass /persistent:no" | Out-Null
