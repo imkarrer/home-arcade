@@ -38,6 +38,12 @@ sync.ps1 pulls every persona's saves from the box; sync.ps1 -PushSaves copies th
 | Launch | Start: **Home Arcade** |
 | Re-sync | `%USERPROFILE%\arcade\sync.ps1` |
 
+## Controllers
+
+Per-game button layouts live in `remaps\<core>\<game id>.rmp`; install.ps1 copies them into RetroArch's `config\remaps` under every ROM name in catalog/games.json. Edit the file here and re-run install.ps1. A layout saved from RetroArch's Quick Menu stays on that PC only.
+
+**GoldenEye 007**: left stick moves and strafes, right stick turns and looks, RT fires, LT (or RB) aims. Each player picks **Control Style 1.2 Solitaire** in the game's options (multiplayer: on the setup screen); without it the sticks feel backwards.
+
 ## Freeciv
 
 **Play**: a private game on this PC (only this PC can connect); you have full control: /save NAME, /load NAME, /endgame.
