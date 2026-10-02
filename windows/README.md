@@ -27,10 +27,15 @@ If that fails: `ping 192.168.1.50` and `Test-NetConnection 192.168.1.50 -Port 44
 
 ## Players
 
-The top of Home Arcade shows **Playing as**: pick a persona, or **New guest** to add one. Personas live in station.json on that PC.
-Every game saves into %USERPROFILE%\arcade\saves\<persona>: RetroArch and DOS saves at the top, save states in states\, Freeciv in freeciv\. Mindustry keeps its own saves in %APPDATA%\Mindustry and is not per persona.
-Saves made before personas move into the first persona the first time a game starts.
-sync.ps1 pulls every persona's saves from the box; sync.ps1 -PushSaves copies them back.
+The top of Home Arcade shows **Playing as**: Dad, Mom, Calvin, Ivy, Faye (from `catalog/players.json`), plus anyone added with **New profile**. Every PC shows the same list, and a profile's saves follow them to any PC.
+
+Each profile is a folder, `%USERPROFILE%\arcade\saves\<profile>` (holding `profile.json`): RetroArch and DOS saves at the top (by core), save states in `states\`, Freeciv in `freeciv\`, Mindustry in `mindustry\`.
+
+- **Before a game starts** the PC pulls that profile's folder from `\\192.168.1.50\arcade\saves`.
+- **When the game exits** it pushes the folder to `\\192.168.1.50\arcade-saves`, the one share a PC can write.
+- **Opening Home Arcade** pulls everything, then pushes every profile, so saves made while the box was off go up later.
+
+Copies are newest-file-wins both ways, and nothing is ever deleted. If the same profile plays the same game on two PCs at once, the save that finishes last wins. Folders under `saves\` without `profile.json` (saves from before profiles) stay on that PC.
 
 | After install | Path |
 | --- | --- |

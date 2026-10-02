@@ -11,46 +11,46 @@ function route() {
   else renderPlay();
 }
 
+// Profiles roam: the same list on every PC, saves follow the profile.
 async function renderPlayer() {
   try {
     const data = await api("/api/players");
-    playerDiv.innerHTML = `
-      Playing as
-      <select id="player-select">
-        ${data.players.map(p => `<option value="${p}" ${p === data.current ? "selected" : ""}>${p}</option>`).join("")}
-      </select>
-      <button id="new-guest">New guest</button>
-    `;
-    document.getElementById("player-select").addEventListener("change", async (e) => {
-      try {
-        await api("/api/player", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name: e.target.value })
-        });
-        renderPlayer();
-      } catch (err) {
-        alert(err.message);
-      }
+    playerDiv.textContent = "Playing as ";
+    const select = document.createElement("select");
+    select.id = "player-select";
+    for (const p of data.players) {
+      const opt = document.createElement("option");
+      opt.value = p.id;
+      opt.textContent = p.name;
+      opt.selected = p.id === data.current;
+      select.appendChild(opt);
+    }
+    select.addEventListener("change", () => setPlayer({ id: select.value }));
+    const add = document.createElement("button");
+    add.id = "new-profile";
+    add.textContent = "New profile";
+    add.addEventListener("click", () => {
+      const name = prompt("Name for the new profile?");
+      if (name) setPlayer({ name });
     });
-    document.getElementById("new-guest").addEventListener("click", async () => {
-      const name = prompt("Guest name?");
-      if (name) {
-        try {
-          await api("/api/player", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name })
-          });
-          renderPlayer();
-        } catch (err) {
-          alert(err.message);
-        }
-      }
+    playerDiv.append(select, " ", add);
+  } catch (err) {
+    playerDiv.innerHTML = '<p class="error"></p>';
+    playerDiv.firstChild.textContent = err.message;
+  }
+}
+
+async function setPlayer(body) {
+  try {
+    await api("/api/player", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
     });
   } catch (err) {
-    playerDiv.innerHTML = '<p class="error">' + err.message + "</p>";
+    alert(err.message);
   }
+  renderPlayer();
 }
 
 async function api(path, opts) {

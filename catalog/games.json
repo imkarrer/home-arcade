@@ -147,7 +147,10 @@
         "-Xmx1G",
         "-jar",
         "{root}/apps/windows/mindustry/Mindustry.jar"
-      ]
+      ],
+      "env": {
+        "MINDUSTRY_DATA_DIR": "{saves}/mindustry/"
+      }
     },
     {
       "id": "freeciv_family",

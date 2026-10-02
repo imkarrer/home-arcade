@@ -1,0 +1,9 @@
+{
+  "players": [
+    { "id": "dad", "name": "Dad" },
+    { "id": "mom", "name": "Mom" },
+    { "id": "calvin", "name": "Calvin" },
+    { "id": "ivy", "name": "Ivy" },
+    { "id": "faye", "name": "Faye" }
+  ]
+}

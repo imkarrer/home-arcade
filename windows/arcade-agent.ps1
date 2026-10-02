@@ -82,7 +82,8 @@ while ($listen.IsListening) {
         }
         if ($path -eq "/api/player" -and $req.HttpMethod -eq "POST") {
             $body = Read-Body $req | ConvertFrom-Json
-            Send-Json $res (Set-ArcadePlayer ([string]$body.name))
+            if ($body.id) { Send-Json $res (Set-ArcadePlayer ([string]$body.id)) }
+            else { Send-Json $res (New-ArcadePlayer ([string]$body.name)) }
             continue
         }
         if ($path -eq "/api/boot" -and $req.HttpMethod -eq "POST") {
