@@ -359,11 +359,37 @@ function Write-CropPreset($rect) {
 function Expand-ArcadeArgs($list, [string]$joinHost = "") {
     $hub = Get-ArcadeHubHost
     $saves = Get-ArcadePlayerSaves
+    $players = Get-ArcadePlayers
+    $player = [string]$players.current
+    foreach ($p in $players.players) { if ($p.id -eq $players.current) { $player = [string]$p.name } }
     $out = @()
     foreach ($a in @($list)) {
-        $out += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root).Replace("{saves}", $saves).Replace("{join}", $joinHost)
+        $out += ([string]$a).Replace("{hub}", $hub).Replace("{root}", $root).Replace("{saves}", $saves).Replace("{join}", $joinHost).Replace("{player}", $player)
     }
     return ,$out
+}
+
+# Start-Process joins -ArgumentList with spaces and adds no quotes, so a profile
+# name like "Player 1" in an argument (-Darcade.name={player}) must carry its own.
+function Format-ArcadeArg([string]$arg) {
+    if ($arg -match '\s' -and $arg -notmatch '^".*"$') { return '"' + $arg + '"' }
+    return $arg
+}
+
+# Catalog "install": files a native game needs inside the profile's data folder
+# (Mindustry's auto-join mod), copied fresh before every launch so a roamed or
+# stale copy never wins.
+function Install-ArcadeGameFiles($game) {
+    foreach ($item in @($game.install)) {
+        if (-not $item) { continue }
+        $from = Join-Path $root (([string]$item.from) -replace "/", "\")
+        $saves = Get-ArcadePlayerSaves
+        $to = ([string]$item.to).Replace("{root}", $root).Replace("{saves}", $saves) -replace "/", "\"
+        if (-not (Test-Path $from)) { throw "$($game.title)'s files are not on this PC yet. Sync from the arcade server." }
+        if (Test-Path $to) { Remove-Item -Path $to -Recurse -Force }
+        New-Item -ItemType Directory -Force -Path (Split-Path $to) | Out-Null
+        Copy-Item -Path $from -Destination $to -Recurse -Force
+    }
 }
 
 function Test-ArcadeLocalPort($port) {
@@ -418,7 +444,9 @@ function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScr
             if (-not $joinHost) { throw "Need the other PC IP to join." }
             Save-StationProp "joinHost" $joinHost
         }
-        $argList = Expand-ArcadeArgs $list $joinHost
+        $expanded = Expand-ArcadeArgs $list $joinHost
+        $argList = @(foreach ($a in $expanded) { Format-ArcadeArg $a })
+        Install-ArcadeGameFiles $game
         # Catalog "env": per-game variables for the child only (Mindustry's
         # MINDUSTRY_DATA_DIR puts its saves in the profile's folder).
         $envNames = @()

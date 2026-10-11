@@ -176,12 +176,13 @@
       "shelf": "build",
       "icon": "🗺️",
       "kind": "native",
-      "modes": ["solo", "host", "join"],
+      "modes": ["solo", "host", "join", "family"],
       "exe": "apps/windows/freeciv/freeciv-gtk3.22.exe",
       "args_by_mode": {
         "solo": ["--autoconnect", "--server", "127.0.0.1", "--port", "5556"],
         "host": ["--autoconnect", "--server", "127.0.0.1", "--port", "5556"],
-        "join": ["--autoconnect", "--server", "{join}", "--port", "5556"]
+        "join": ["--autoconnect", "--server", "{join}", "--port", "5556"],
+        "family": ["--autoconnect", "--server", "{hub}", "--port", "5556"]
       },
       "local_server": {
         "exe": "apps/windows/freeciv/freeciv-server.exe",
@@ -194,7 +195,8 @@
       "mode_labels": {
         "solo": "Play",
         "host": "Host",
-        "join": "Join a friend"
+        "join": "Join a friend",
+        "family": "Family game"
       }
     },
     {
@@ -203,7 +205,7 @@
       "shelf": "build",
       "icon": "🏭",
       "kind": "native",
-      "modes": ["solo"],
+      "modes": ["solo", "family"],
       "exe": "apps/windows/jre/bin/java.exe",
       "args": [
         "-Xms256M",
@@ -211,21 +213,28 @@
         "-jar",
         "{root}/apps/windows/mindustry/Mindustry.jar"
       ],
+      "args_by_mode": {
+        "family": [
+          "-Xms256M",
+          "-Xmx1G",
+          "-Darcade.join={hub}:6567",
+          "-Darcade.name={player}",
+          "-jar",
+          "{root}/apps/windows/mindustry/Mindustry.jar"
+        ]
+      },
+      "install": [
+        {
+          "from": "catalog/mindustry/arcade-autojoin",
+          "to": "{saves}/mindustry/mods/arcade-autojoin"
+        }
+      ],
       "env": {
         "MINDUSTRY_DATA_DIR": "{saves}/mindustry/"
-      }
-    },
-    {
-      "id": "freeciv_family",
-      "title": "Freeciv: family game",
-      "shelf": "build",
-      "icon": "🏰",
-      "kind": "native",
-      "modes": ["solo"],
-      "exe": "apps/windows/freeciv/freeciv-gtk3.22.exe",
-      "args": ["--autoconnect", "--server", "{hub}", "--port", "5556"],
+      },
       "mode_labels": {
-        "solo": "Play"
+        "solo": "Play",
+        "family": "Family game"
       }
     }
   ]
