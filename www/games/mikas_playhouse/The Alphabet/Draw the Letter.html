@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Draw the Letter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✏️%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#fff4d6;--card:#fffdf7;--ink:#2a2150;--mut:#7b7499;--acc:#6d4aff;--bad:#ff4d4d;--good:#1fb866;--guide:#e6defa;--line:#ddd3f5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171332;--card:#221c47;--ink:#f1edff;--mut:#a79fd0;--acc:#9b83ff;--guide:#352d68;--line:#3a3270}}
+:root[data-theme="dark"]{--bg:#171332;--card:#221c47;--ink:#f1edff;--mut:#a79fd0;--acc:#9b83ff;--guide:#352d68;--line:#3a3270}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:ui-rounded,"Arial Rounded MT Bold","Trebuchet MS",Verdana,sans-serif;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#app{display:flex;flex-direction:column;height:100%;max-width:640px;margin:0 auto;padding:10px 14px 14px;gap:10px}
+header{display:flex;align-items:center;gap:10px}
+h1{font-size:1.25rem;margin:0;flex:1;letter-spacing:.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+.ib{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--card);font-size:1.3rem;display:grid;place-items:center;padding:0}
+.ib:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+#gauge{position:relative;height:30px;border-radius:15px;background:var(--card);border:2px solid var(--line);overflow:hidden}
+#fill{position:absolute;inset:0 auto 0 0;width:1%;transition:width .5s cubic-bezier(.3,1.4,.5,1),background .5s}
+#gtxt{position:absolute;inset:0;display:grid;place-items:center;font-weight:800;font-size:.9rem;text-shadow:0 0 4px var(--card),0 0 4px var(--card)}
+#prompt{display:flex;align-items:center;justify-content:center;gap:10px;font-weight:700;color:var(--mut);min-height:44px}
+#prompt b{color:var(--ink);font-size:1.4rem}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center}
+#board{position:relative;border-radius:24px;background:var(--card);border:3px solid var(--line);transition:border-color .2s,transform .2s}
+#board.bad{border-color:var(--bad);animation:shake .3s}
+#board.good{border-color:var(--good);transform:scale(1.02)}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+canvas{position:absolute;inset:0;border-radius:21px}
+#ink{touch-action:none;cursor:crosshair}
+#prog{height:8px;border-radius:4px;background:var(--guide);overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:var(--acc);transition:width .15s}
+.row{display:flex;gap:10px}
+.btn{flex:1;min-height:48px;border-radius:14px;border:2px solid var(--line);background:var(--card);font-weight:700;font-size:1rem}
+.btn.p{background:var(--acc);border-color:var(--acc);color:#fff}
+.ov{position:fixed;inset:0;background:rgba(20,10,50,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:5}
+.ov.on{display:flex}
+.card{background:var(--card);border-radius:22px;padding:20px;max-width:420px;width:100%;max-height:88%;overflow:auto;box-sizing:border-box;border:2px solid var(--line)}
+.card h2{margin:0 0 12px;font-size:1.3rem;display:flex;justify-content:space-between;align-items:center}
+.set{margin:14px 0}
+.set label,.set .l{display:block;font-weight:700;margin-bottom:6px;font-size:.95rem}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;min-height:42px;border-radius:12px;border:2px solid var(--line);background:transparent;font-weight:700}
+.seg button[aria-pressed="true"]{background:var(--acc);border-color:var(--acc);color:#fff}
+.chk{display:flex;align-items:center;gap:10px;min-height:40px;font-weight:600}
+.chk input{width:22px;height:22px;accent-color:var(--acc)}
+.credit{margin-top:18px;text-align:center;font-size:.7rem;color:var(--mut);opacity:.8}
+.credit a{color:inherit}
+#end{text-align:center}
+#end .big{font-size:4rem;line-height:1.1}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>✏️ Draw the Letter</h1>
+    <button class="ib" id="gear" aria-label="Settings">⚙️</button>
+  </header>
+  <div id="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="fill"></div><div id="gtxt">1 / 100</div></div>
+  <div id="prompt"><span id="ptxt">Get ready…</span><button class="ib" id="say" aria-label="Hear it again">🔊</button></div>
+  <div id="stage"><div id="board"><canvas id="guide"></canvas><canvas id="ink"></canvas></div></div>
+  <div id="prog"><i></i></div>
+  <div class="row"><button class="btn" id="clear">🧽 Redo</button><button class="btn" id="skip">⏭ Skip</button></div>
+</div>
+
+<div class="ov" id="set"><div class="card" role="dialog" aria-label="Settings">
+  <h2>Settings <button class="ib" id="close" aria-label="Close">✕</button></h2>
+  <div class="set"><span class="l">Letter case</span><div class="seg" data-k="case"><button data-v="upper">ABC</button><button data-v="lower">abc</button><button data-v="mixed">Aa</button></div></div>
+  <div class="set"><span class="l">What to practice</span>
+    <label class="chk"><input type="checkbox" data-c="letters"> Letters</label>
+    <label class="chk"><input type="checkbox" data-c="numbers"> Numbers</label>
+    <label class="chk"><input type="checkbox" data-c="punct"> Punctuation</label></div>
+  <div class="set"><span class="l">Points per correct</span><div class="seg" data-k="gain"><button data-v="1">1</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
+  <div class="set"><span class="l">Difficulty (Easy shows a line to follow)</span><div class="seg" data-k="tol"><button data-v="easy">Easy</button><button data-v="normal">Normal</button><button data-v="hard">Hard</button></div></div>
+  <div class="set"><span class="l">Guide letter</span><div class="seg" data-k="guide"><button data-v="on">Show</button><button data-v="off">Hide</button></div></div>
+  <div class="set"><span class="l">Theme</span><div class="seg" data-k="theme"><button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+  <label class="chk"><input type="checkbox" data-c="sound"> Sound effects</label>
+  <label class="chk"><input type="checkbox" data-c="speech"> Speak the letters</label>
+  <div class="row" style="margin-top:14px"><button class="btn" id="restart">↺ Restart game</button><button class="btn p" id="done">Done</button></div>
+  <div class="credit">Made With ❤️ By <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener">KungPowUnicorn</a></div>
+</div></div>
+
+<div class="ov" id="endov"><div class="card" id="end"><div class="big" id="eE"></div><h2 style="justify-content:center" id="eT"></h2><p id="eP"></p><button class="btn p" id="again" style="width:100%">Play again</button></div></div>
+
+<script>
+(function(){
+const $=s=>document.querySelector(s);
+const FONT='"Arial Rounded MT Bold","Trebuchet MS",Verdana,sans-serif';
+const PUNCT={'.':'period',',':'comma','!':'exclamation mark','?':'question mark',"'":'apostrophe','"':'quotation mark','-':'hyphen',':':'colon',';':'semicolon','(':'open parenthesis',')':'close parenthesis','&':'ampersand','@':'at sign','#':'hash','$':'dollar sign','%':'percent sign','+':'plus sign','=':'equals sign','/':'slash','*':'asterisk'};
+const TOL={easy:.07,normal:.045,hard:.028}, RAD={easy:.055,normal:.045,hard:.035};
+const PRAISE=['Great job!','Awesome!','Nice writing!','You did it!','Fantastic!','Super!'];
+let S={case:'upper',letters:true,numbers:true,punct:false,gain:5,tol:'normal',guide:'on',theme:'auto',sound:true,speech:true};
+try{Object.assign(S,JSON.parse(localStorage.getItem('dtl')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('dtl',JSON.stringify(S))}catch(e){}};
+
+// ---------- audio ----------
+let ac=null;
+function audio(){try{if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume()}catch(e){}return ac}
+function tone(f,d,t,w,v){if(!S.sound)return;const c=audio();if(!c)return;const o=c.createOscillator(),g=c.createGain(),s=c.currentTime+(w||0);
+o.type=t||'sine';o.frequency.value=f;g.gain.setValueAtTime(v||.15,s);g.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(g).connect(c.destination);o.start(s);o.stop(s+d)}
+const sfx={good(){[523,659,784].forEach((f,i)=>tone(f,.25,'triangle',i*.1))},bad(){tone(150,.18,'sawtooth',0,.12)},
+win(){[523,659,784,1047,784,1047,1319].forEach((f,i)=>tone(f,.3,'triangle',i*.12))},over(){[392,330,262,196].forEach((f,i)=>tone(f,.35,'square',i*.18,.08))}};
+function speak(t){if(!S.speech||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.85;u.pitch=1.15;speechSynthesis.speak(u)}catch(e){}}
+
+// ---------- state ----------
+let score=1,cur=null,size=300,locked=true,drawing=false,last=null,wasOut=false,lastPen=0,alpha=null,samples=[],covered=[],nCov=0,prev='';
+const board=$('#board'),gC=$('#guide'),iC=$('#ink'),gx=gC.getContext('2d'),ix=iC.getContext('2d');
+const mk=()=>{const c=document.createElement('canvas');return c};
+
+function setGauge(){const p=Math.max(0,Math.min(100,score));$('#fill').style.width=Math.max(p,1)+'%';$('#fill').style.background='hsl('+(p*1.25)+',80%,52%)';
+$('#gtxt').textContent=p+' / 100';$('#gauge').setAttribute('aria-valuenow',p)}
+
+function pool(){const a=[];
+if(S.letters)for(let i=65;i<91;i++)a.push(String.fromCharCode(i));
+if(S.numbers)for(let i=0;i<10;i++)a.push(''+i);
+if(S.punct)a.push(...Object.keys(PUNCT));
+return a.length?a:'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')}
+
+function pickNext(){const p=pool();let ch;do{ch=p[Math.floor(Math.random()*p.length)]}while(ch===prev&&p.length>1);prev=ch;
+let isLetter=/[A-Z]/.test(ch),lower=false;
+if(isLetter){lower=S.case==='lower'||(S.case==='mixed'&&Math.random()<.5);if(lower)ch=ch.toLowerCase()}
+let kind=isLetter?(lower?'small letter':'capital letter'):/\d/.test(ch)?'number':'';
+let name=PUNCT[ch]||ch;
+return{ch,kind,name,say:isLetter?'Draw the '+kind+' '+ch:/\d/.test(ch)?'Draw the number '+ch:'Draw the '+name}}
+
+function glyph(ctx,ch,fillStyle,strokeW,strokeStyle){ctx.font='800 '+(size*.7)+'px '+FONT;ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.lineJoin='round';
+if(strokeW){ctx.lineWidth=strokeW;ctx.strokeStyle=strokeStyle;ctx.strokeText(ch,size/2,size*.68)}
+if(fillStyle){ctx.fillStyle=fillStyle;ctx.fillText(ch,size/2,size*.68)}}
+
+function thin(g,N){let ch=true;const nb=(i)=>[g[i-N],g[i-N+1],g[i+1],g[i+N+1],g[i+N],g[i+N-1],g[i-1],g[i-N-1]];
+  while(ch){ch=false;for(let pass=0;pass<2;pass++){const del=[];
+    for(let y=1;y<N-1;y++)for(let x=1;x<N-1;x++){const i=y*N+x;if(!g[i])continue;const p=nb(i);let B=0,A=0;
+      for(let j=0;j<8;j++){B+=p[j];if(!p[j]&&p[(j+1)%8])A++}
+      if(B<2||B>6||A!==1)continue;
+      if(pass===0){if(p[0]*p[2]*p[4]||p[2]*p[4]*p[6])continue}else{if(p[0]*p[2]*p[6]||p[0]*p[4]*p[6])continue}
+      del.push(i)}
+    if(del.length){ch=true;del.forEach(i=>g[i]=0)}}}}
+function setup(){
+  const dpr=window.devicePixelRatio||1;
+  for(const c of [gC,iC]){c.width=c.height=Math.round(size*dpr);c.style.width=c.style.height=size+'px'}
+  board.style.width=board.style.height=size+'px';
+  gx.setTransform(dpr,0,0,dpr,0,0);ix.setTransform(dpr,0,0,dpr,0,0);
+  ix.lineCap=ix.lineJoin='round';
+  // masks (logical px)
+  const a=mk();a.width=a.height=size;const ax=a.getContext('2d',{willReadFrequently:true});
+  glyph(ax,cur.ch,'#000',TOL[S.tol]*size*2,'#000');alpha=ax.getImageData(0,0,size,size).data;
+  const N=100,b=mk();b.width=b.height=N;const bx=b.getContext('2d',{willReadFrequently:true});
+  bx.font='800 '+(N*.7)+'px '+FONT;bx.textAlign='center';bx.textBaseline='alphabetic';bx.fillStyle='#000';bx.fillText(cur.ch,N/2,N*.68);
+  const d=bx.getImageData(0,0,N,N).data,bin=new Uint8Array(N*N),fillPts=[];
+  for(let i=0;i<N*N;i++)if(d[i*4+3]>128){bin[i]=1;fillPts.push(i)}
+  thin(bin,N);
+  const k=size/N,toXY=i=>[(i%N+.5)*k,(Math.floor(i/N)+.5)*k];
+  samples=[];for(let i=0;i<N*N;i++)if(bin[i])samples.push(toXY(i));
+  if(samples.length<3)samples=fillPts.map(toXY);
+  covered=new Uint8Array(samples.length);nCov=0;
+  const css=getComputedStyle(document.documentElement);
+  gx.clearRect(0,0,size,size);ix.clearRect(0,0,size,size);
+  if(S.guide==='on')glyph(gx,cur.ch,css.getPropertyValue('--guide').trim());
+  if(S.tol==='easy'){gx.strokeStyle=css.getPropertyValue('--acc').trim();gx.globalAlpha=.6;gx.lineWidth=size*.012;gx.lineCap='round';gx.beginPath();
+    for(let i=0;i<N*N;i++)if(bin[i])for(const j of [i+1,i+N-1,i+N,i+N+1])if(j<N*N&&bin[j]&&Math.abs((j%N)-(i%N))<=1){const u=toXY(i),v=toXY(j);gx.moveTo(u[0],u[1]);gx.lineTo(v[0],v[1])}
+    gx.stroke();gx.globalAlpha=1}
+  $('#prog i').style.width='0';
+}
+
+function newRound(){cur=pickNext();$('#ptxt').innerHTML=cur.kind?'Draw the '+cur.kind+' <b>'+cur.ch+'</b>':'Draw the '+cur.name+' <b>'+cur.ch+'</b>';
+  setup();locked=false;speak(cur.say)}
+
+function fit(){const st=$('#stage');size=Math.max(160,Math.floor(Math.min(st.clientWidth,st.clientHeight)-6));if(cur){setup()}}
+
+// ---------- drawing ----------
+function pt(e){const r=iC.getBoundingClientRect();return[(e.clientX-r.left)*(size/r.width),(e.clientY-r.top)*(size/r.height)]}
+const inside=(x,y)=>{x=Math.round(x);y=Math.round(y);return x>=0&&y>=0&&x<size&&y<size&&alpha[(y*size+x)*4+3]>40};
+function flash(c){board.classList.remove('bad','good');void board.offsetWidth;board.classList.add(c);setTimeout(()=>board.classList.remove(c),350)}
+
+function penalty(){score=Math.max(0,score-1);setGauge();sfx.bad();flash('bad');if(navigator.vibrate)try{navigator.vibrate(40)}catch(e){}
+  if(score<=0)finish(false)}
+
+function cover(x,y){const R=RAD[S.tol]*size,R2=R*R;let ch=false;
+  for(let i=0;i<samples.length;i++){if(!covered[i]){const dx=samples[i][0]-x,dy=samples[i][1]-y;if(dx*dx+dy*dy<=R2){covered[i]=1;nCov++;ch=true;}}}
+  if(ch){const p=nCov/samples.length;$('#prog i').style.width=Math.min(100,p/.93*100)+'%';if(p>=.93)complete()}}
+
+function step(x,y,px,py){
+  const out=!inside(x,y),now=performance.now();
+  if(out){if(!wasOut||now-lastPen>700){wasOut=true;lastPen=now;penalty();if(locked)return}}else wasOut=false;
+  ix.strokeStyle=out?getComputedStyle(document.documentElement).getPropertyValue('--bad').trim():getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
+  ix.lineWidth=size*.045;ix.beginPath();ix.moveTo(px,py);ix.lineTo(x,y);ix.stroke();
+  if(!out)cover(x,y)}
+
+iC.addEventListener('pointerdown',e=>{if(locked)return;e.preventDefault();audio();iC.setPointerCapture(e.pointerId);drawing=true;wasOut=false;last=pt(e);step(last[0],last[1],last[0],last[1])});
+iC.addEventListener('pointermove',e=>{if(!drawing||locked)return;e.preventDefault();const p=pt(e),dx=p[0]-last[0],dy=p[1]-last[1],n=Math.max(1,Math.ceil(Math.hypot(dx,dy)/3));
+  for(let i=1;i<=n&&!locked;i++){const x=last[0]+dx*i/n,y=last[1]+dy*i/n,px=last[0]+dx*(i-1)/n,py=last[1]+dy*(i-1)/n;step(x,y,px,py)}last=p});
+const up=()=>{drawing=false;wasOut=false};
+iC.addEventListener('pointerup',up);iC.addEventListener('pointercancel',up);
+
+function complete(){if(locked)return;locked=true;drawing=false;
+  score=Math.min(100,score+(+S.gain));setGauge();flash('good');sfx.good();
+  const css=getComputedStyle(document.documentElement);glyph(ix,cur.ch,css.getPropertyValue('--good').trim());
+  if(score>=100){setTimeout(()=>finish(true),700)}else{speak(PRAISE[Math.floor(Math.random()*PRAISE.length)]);setTimeout(newRound,1300)}}
+
+function finish(win){locked=true;drawing=false;
+  $('#eE').textContent=win?'🏆':'💫';$('#eT').textContent=win?'You win!':'Game over';
+  $('#eP').textContent=win?'The gauge hit 100. Amazing writing!':'The gauge ran out. Try again, you can do it!';
+  $('#endov').classList.add('on');if(win){sfx.win();speak('You win! Amazing!')}else{sfx.over();speak('Game over. Try again!')}}
+
+function restart(){score=1;setGauge();$('#endov').classList.remove('on');$('#set').classList.remove('on');newRound()}
+
+// ---------- settings UI ----------
+function applyTheme(){const r=document.documentElement;S.theme==='auto'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',S.theme)}
+function syncUI(){document.querySelectorAll('.seg').forEach(g=>g.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',String(S[g.dataset.k])===b.dataset.v)));
+  document.querySelectorAll('[data-c]').forEach(c=>c.checked=!!S[c.dataset.c])}
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{const k=b.parentNode.dataset.k;S[k]=k==='gain'?+b.dataset.v:b.dataset.v;save();syncUI();applyTheme();if(k==='guide'||k==='tol'||k==='theme')setup()}));
+document.querySelectorAll('[data-c]').forEach(c=>c.addEventListener('change',()=>{S[c.dataset.c]=c.checked;if(!S.letters&&!S.numbers&&!S.punct){S.letters=true}save();syncUI()}));
+const openSet=()=>{syncUI();$('#set').classList.add('on')};
+const closeSet=()=>{$('#set').classList.remove('on');if(!locked||!cur)return;newRound()};
+$('#gear').onclick=openSet;$('#close').onclick=closeSet;$('#done').onclick=closeSet;
+$('#set').addEventListener('click',e=>{if(e.target.id==='set')closeSet()});
+$('#restart').onclick=restart;$('#again').onclick=restart;
+$('#clear').onclick=()=>{if(!locked)setup()};
+$('#skip').onclick=()=>{if(!locked){audio();newRound()}};
+$('#say').onclick=()=>{audio();if(cur)speak(cur.say)};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSet()});
+window.addEventListener('resize',fit);
+if(window.ResizeObserver)new ResizeObserver(fit).observe($('#stage'));
+
+applyTheme();syncUI();setGauge();fit();newRound();
+})();
+</script>
+</body>
+</html>

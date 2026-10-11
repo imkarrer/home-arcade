@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Number Finder</title>
+<style>
+  :root{ --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px); }
+  *{ box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none; }
+  html,body{ height:100%; margin:0; overflow:hidden; overscroll-behavior:none; touch-action:manipulation;
+    background:radial-gradient(circle at 50% 0%,#2a1f66,#0b0f2a 70%); font-family:-apple-system,Helvetica,Arial,sans-serif; }
+  #app{ position:fixed; inset:0; padding-top:var(--safe-t); padding-bottom:var(--safe-b); display:flex; flex-direction:column; }
+  canvas#fx{ position:fixed; inset:0; pointer-events:none; z-index:50; }
+  #gaugeWrap{ padding:12px 16px 2px; display:flex; align-items:center; gap:8px; }
+  #gaugeTrack{ flex:1; height:30px; border-radius:16px; background:#1c2350; border:3px solid #ffffff40; overflow:hidden; position:relative; box-shadow:inset 0 2px 4px #0006; }
+  #gaugeFill{ height:100%; width:5%; background:linear-gradient(90deg,#ff5f6d,#ffc371,#5be584); transition:width .35s ease; border-radius:0 12px 12px 0; }
+  #gaugeIcon{ font-size:26px; filter:drop-shadow(0 2px 2px #0006); }
+  #promptWrap{ display:flex; justify-content:center; padding:10px 12px 6px; }
+  #prompt{ text-align:center; color:#3a2a6a; font-size:clamp(28px,10vw,60px); font-weight:900; padding:10px 28px;
+    background:#fff; border-radius:30px; box-shadow:0 6px 0 #d8cfff, 0 10px 20px #0004; min-width:2.4em;
+    transition:transform .15s; }
+  #prompt.pop{ animation:pop .35s ease; }
+  @keyframes pop{ 0%{transform:scale(0.7);} 60%{transform:scale(1.12);} 100%{transform:scale(1);} }
+  #grid{ flex:1; display:grid; gap:9px; padding:10px; place-content:stretch; }
+  .tile{ border:none; border-radius:22px; font-weight:900; color:#fff; font-size:clamp(18px,6vw,44px);
+    box-shadow:0 5px 0 #0003, inset 0 2px 6px #fff5; display:flex; align-items:center; justify-content:center;
+    transition:transform .08s; }
+  .tile:nth-child(6n+1){ background:linear-gradient(160deg,#ff8a5c,#e8542f); }
+  .tile:nth-child(6n+2){ background:linear-gradient(160deg,#5cc9ff,#2a7bd6); }
+  .tile:nth-child(6n+3){ background:linear-gradient(160deg,#8effa0,#2fa860); }
+  .tile:nth-child(6n+4){ background:linear-gradient(160deg,#ffe45c,#e0a72a); }
+  .tile:nth-child(6n+5){ background:linear-gradient(160deg,#c78bff,#8a3fe0); }
+  .tile:nth-child(6n+6){ background:linear-gradient(160deg,#ff7ebd,#e0397e); }
+  .tile:active{ transform:scale(.9); }
+  .tile.glow{ animation:glow 0.6s infinite alternate; }
+  @keyframes glow{ from{ box-shadow:0 0 8px 2px #fff8,0 5px 0 #0003;} to{ box-shadow:0 0 26px 10px #ffef70,0 5px 0 #0003;} }
+  #app.shake{ animation:shake .45s cubic-bezier(.36,.07,.19,.97); }
+  @keyframes shake{ 10%,90%{transform:translate(-2px,1px);} 20%,80%{transform:translate(4px,-2px);} 30%,50%,70%{transform:translate(-8px,3px);} 40%,60%{transform:translate(8px,-3px);} }
+  #redFlash{ position:fixed; inset:0; z-index:80; pointer-events:none; opacity:0;
+    background:radial-gradient(circle at 50% 50%,#ff2a2a00 35%,#ff1a1acc 100%); box-shadow:inset 0 0 90px 30px #ff0000aa; }
+  #redFlash.on{ animation:redAlert .7s ease-out; }
+  @keyframes redAlert{ 0%{opacity:0;} 15%{opacity:1;} 35%{opacity:.35;} 55%{opacity:.9;} 100%{opacity:0;} }
+  .tile.wobble{ animation:wobble .45s ease; background:linear-gradient(160deg,#ff5f5f,#c21f1f) !important; }
+  @keyframes wobble{ 0%,100%{transform:rotate(0);} 20%{transform:rotate(-10deg) scale(.92);} 40%{transform:rotate(9deg) scale(.92);} 60%{transform:rotate(-6deg);} 80%{transform:rotate(4deg);} }
+  #gaugeTrack.hurt{ animation:hurt .45s ease; border-color:#ff4d4d; }
+  @keyframes hurt{ 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 50%{transform:translateX(6px);} 75%{transform:translateX(-3px);} }
+  .oops{ position:fixed; z-index:85; pointer-events:none; font-size:clamp(28px,8vw,52px); font-weight:900; color:#fff;
+    text-shadow:0 0 8px #f00,0 3px 0 #900; transform:translate(-50%,-50%); animation:oopsUp .9s ease-out forwards; }
+  @keyframes oopsUp{ 0%{opacity:0;transform:translate(-50%,-30%) scale(.5);} 20%{opacity:1;transform:translate(-50%,-60%) scale(1.15);} 100%{opacity:0;transform:translate(-50%,-160%) scale(1);} }
+  #overlay{ position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; flex-direction:column; background:#000000cc; color:#fff; text-align:center; padding:20px; }
+  #overlay.show{ display:flex; }
+  #overlay h2{ font-size:clamp(22px,6vw,40px); margin:0 0 14px; }
+  .bigbtn{ font-size:clamp(18px,5vw,28px); font-weight:800; padding:16px 32px; border-radius:20px; border:none; background:#5be584; color:#08351a; box-shadow:0 5px 0 #2f8a4d; }
+  .bigbtn:active{ transform:translateY(3px); box-shadow:none; }
+  #finaleLayer{ position:fixed; inset:0; z-index:90; display:none; flex-direction:column; justify-content:flex-end; align-items:center; overflow:hidden; padding-bottom:calc(16px + var(--safe-b)); }
+  #finaleLayer.show{ display:flex; }
+  #finaleFlash{ position:absolute; inset:0; background:radial-gradient(circle at 50% 25%,#ffffff66,transparent 60%); animation:flashPulse 1.3s ease-in-out infinite; pointer-events:none; }
+  @keyframes flashPulse{ 0%,100%{ opacity:.25; filter:hue-rotate(0deg);} 50%{ opacity:.75; filter:hue-rotate(160deg);} }
+  #paradeTrack{ position:relative; width:100%; height:78px; overflow:hidden; margin-bottom:8px; }
+  .paradeChar{ position:absolute; bottom:0; font-size:50px; filter:drop-shadow(0 4px 4px #0007);
+    animation:march 8s linear infinite, bob .45s ease-in-out infinite alternate; }
+  @keyframes march{ from{ left:112%; } to{ left:-18%; } }
+  @keyframes bob{ from{ transform:translateY(0);} to{ transform:translateY(-14px);} }
+  #finaleHint{ color:#fff; font-weight:900; font-size:clamp(18px,5vw,28px); text-shadow:0 2px 8px #000; animation:pulse 1s infinite; background:#ffffff22; padding:10px 22px; border-radius:20px; }
+  @keyframes pulse{ 0%,100%{opacity:.6;transform:scale(1);} 50%{opacity:1;transform:scale(1.06);} }
+  #topBar{ display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px 2px; color:#fff; }
+  #gameTitle{ font-weight:900; font-size:clamp(15px,4.2vw,21px); text-shadow:0 2px 4px #0007; white-space:nowrap; }
+  #scoreMini{ display:flex; gap:10px; font-weight:800; font-size:clamp(12px,3.2vw,15px); background:#ffffff22; border-radius:14px; padding:5px 12px; }
+  #gearBtn{ flex:none; width:38px; height:38px; border-radius:50%; border:none; background:#ffffff33; color:#fff; font-size:18px; }
+  #settings{ position:fixed; inset:0; z-index:200; background:#111a; display:none; align-items:center; justify-content:center; }
+  #settings.show{ display:flex; }
+  .panel{ background:#1c2350; color:#fff; padding:22px; border-radius:18px; width:min(92vw,420px); max-height:88vh; overflow:auto; }
+  .panel h3{ margin-top:0; }
+  .row{ display:flex; align-items:center; justify-content:space-between; margin:14px 0; gap:10px; }
+  select,button.opt{ font-size:16px; padding:8px 10px; border-radius:10px; border:none; }
+  .opt{ background:#3a4590; color:#fff; }
+  .opt.active{ background:#5be584; color:#08351a; font-weight:800; }
+  .optrow{ display:flex; gap:6px; flex-wrap:wrap; }
+  .closeBtn{ display:block; margin:16px auto 0; background:#ff5f6d; color:#fff; border:none; padding:10px 22px; border-radius:12px; font-weight:800; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="topBar">
+    <span id="gameTitle">🔢 Number Finder</span>
+    <span id="scoreMini">✅ <span id="correctCount">0</span> ❌ <span id="incorrectCount">0</span></span>
+    <button id="gearBtn">⚙️</button>
+  </div>
+  <div id="gaugeWrap">
+    <div id="gaugeTrack"><div id="gaugeFill"></div></div>
+    <span id="gaugeIcon">🚀</span>
+  </div>
+  <div id="promptWrap"><div id="prompt">Get Ready!</div></div>
+  <div id="grid"></div>
+</div>
+<canvas id="fx"></canvas>
+<div id="redFlash"></div>
+
+<div id="overlay">
+  <h2 id="overlayMsg"></h2>
+  <button class="bigbtn" id="overlayBtn">Play Again!</button>
+</div>
+
+<div id="finaleLayer">
+  <div id="finaleFlash"></div>
+  <div id="paradeTrack">
+    <span class="paradeChar" style="animation-delay:0s,0s">🐻</span>
+    <span class="paradeChar" style="animation-delay:-1.3s,.1s">🐰</span>
+    <span class="paradeChar" style="animation-delay:-2.6s,.2s">🦊</span>
+    <span class="paradeChar" style="animation-delay:-4s,.3s">🐸</span>
+    <span class="paradeChar" style="animation-delay:-5.3s,.15s">🐥</span>
+    <span class="paradeChar" style="animation-delay:-6.6s,.05s">🦁</span>
+  </div>
+  <div id="finaleHint">✨ Tap to play again! ✨</div>
+</div>
+
+<div id="settings">
+  <div class="panel">
+    <h3>Settings</h3>
+    <div class="row">Count up to
+      <input id="rangeInput" type="number" min="2" max="200" style="font-size:20px;width:80px;padding:8px;border-radius:10px;border:none;text-align:center;">
+    </div>
+    <div class="row">Mode
+      <div class="optrow" id="modeOpts"></div>
+    </div>
+    <div class="row">Gauge Penalty
+      <div class="optrow" id="penaltyOpts"></div>
+    </div>
+    <div class="row">Gauge Increment
+      <div class="optrow" id="incOpts"></div>
+    </div>
+    <div class="row">Hint after (sec)
+      <input id="hintDelayInput" type="number" min="3" max="120" style="font-size:20px;width:80px;padding:8px;border-radius:10px;border:none;text-align:center;">
+    </div>
+    <div class="row">Shuffle after Correct
+      <div class="optrow" id="shuffleOpts"></div>
+    </div>
+    <div class="row">Speech Speed
+      <div class="optrow" id="speedOpts"></div>
+    </div>
+    <hr style="border-color:#ffffff33;margin:16px 0;">
+    <div class="row" style="flex-direction:column;align-items:stretch;gap:8px">
+      <strong>📊 Report</strong>
+      <div id="reportSummary" style="font-size:14px;"></div>
+      <div class="optrow">
+        <button class="opt" id="saveReportBtn">💾 Save .txt</button>
+        <button class="opt" id="resetReportBtn">🗑️ Reset Report</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:16px;font-size:11px;opacity:.45;">
+      Made With ❤️ By <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener" style="color:inherit;">KungPowUnicorn</a>
+    </div>
+    <button class="closeBtn" id="settingsClose">Done</button>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+// ---------- state / persistence ----------
+const DEFAULTS = { maxNum:20, mode:'sequential', penalty:true, speed:0.9, increment:5, shuffleOnCorrect:false, hintDelay:30 };
+let cfg = Object.assign({}, DEFAULTS);
+try{ const saved = JSON.parse(localStorage.getItem('nfw_cfg')); if(saved) cfg = Object.assign({}, DEFAULTS, saved); }catch(e){}
+function saveCfg(){ try{ localStorage.setItem('nfw_cfg', JSON.stringify(cfg)); }catch(e){} }
+
+function loadStats(){ try{ const s=JSON.parse(localStorage.getItem('nfw_stats')); if(s) return s; }catch(e){} return {correct:0,incorrect:0,byNumber:{}}; }
+let stats = loadStats();
+function saveStats(){ try{ localStorage.setItem('nfw_stats', JSON.stringify(stats)); }catch(e){} }
+function recordResult(n, correct){
+  if(correct) stats.correct++; else stats.incorrect++;
+  if(!stats.byNumber[n]) stats.byNumber[n] = {correct:0,incorrect:0};
+  stats.byNumber[n][correct?'correct':'incorrect']++;
+  saveStats(); updateHeaderCounts();
+}
+function updateHeaderCounts(){
+  document.getElementById('correctCount').textContent = stats.correct;
+  document.getElementById('incorrectCount').textContent = stats.incorrect;
+}
+function renderReport(){
+  const el = document.getElementById('reportSummary');
+  const nums = Object.keys(stats.byNumber).map(Number).sort((a,b)=>a-b);
+  const rows = nums.map(n=>{ const s=stats.byNumber[n]; return `<tr><td>${n}</td><td>${s.correct}</td><td>${s.incorrect}</td></tr>`; }).join('');
+  el.innerHTML = `Total: ✅ ${stats.correct} &nbsp; ❌ ${stats.incorrect}` +
+    (nums.length ? `<div style="max-height:150px;overflow:auto;margin-top:8px;"><table style="width:100%;border-collapse:collapse;text-align:center;font-size:13px;">
+      <tr style="opacity:.7"><th>#</th><th>✅</th><th>❌</th></tr>${rows}</table></div>` : '');
+}
+function saveReportTxt(){
+  const nums = Object.keys(stats.byNumber).map(Number).sort((a,b)=>a-b);
+  const lines = ['Number Finder Report', 'Generated: '+new Date().toLocaleString(), '',
+    'Total Correct: '+stats.correct, 'Total Incorrect: '+stats.incorrect, '', 'Number | Correct | Incorrect'];
+  nums.forEach(n=>{ const s=stats.byNumber[n]; lines.push(`${n} | ${s.correct} | ${s.incorrect}`); });
+  const blob = new Blob([lines.join('\n')], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='number_finder_report.txt';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+function resetReport(){
+  if(confirm('Reset all report data? This cannot be undone.')){
+    stats = {correct:0,incorrect:0,byNumber:{}}; saveStats(); updateHeaderCounts(); renderReport();
+  }
+}
+
+let gauge = 0, current = null, order = [], idx = 0, hintTimer=null, broken=false;
+
+// ---------- audio synth ----------
+let actx;
+function ac(){ if(!actx) actx = new (window.AudioContext||window.webkitAudioContext)(); return actx; }
+function tone(freq, dur, type='sine', vol=0.25, delay=0){
+  const c = ac(); const t0 = c.currentTime + delay;
+  const o = c.createOscillator(), g = c.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t0);
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(vol, t0+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t0+dur);
+  o.connect(g); g.connect(c.destination);
+  o.start(t0); o.stop(t0+dur+0.05);
+}
+function sfxCorrect(){ [523,659,784,1047].forEach((f,i)=>tone(f,0.25,'triangle',0.22,i*0.07)); }
+function sfxWrong(){ tone(330,0.14,'square',0.12); tone(330,0.14,'square',0.12,0.18); tone(150,0.35,'sawtooth',0.12,0.34); }
+function sfxPop(){ tone(180+Math.random()*400,0.18,'square',0.2); }
+function sfxCrack(){ [300,180,90].forEach((f,i)=>tone(f,0.2,'sawtooth',0.25,i*0.05)); }
+function sfxFix(){ [400,600,900].forEach((f,i)=>tone(f,0.15,'sine',0.2,i*0.06)); }
+function sfxCheer(){ for(let i=0;i<10;i++) tone(400+Math.random()*800,0.3,'triangle',0.15,i*0.08); }
+
+// ---------- speech ----------
+function speak(text){
+  if(!window.speechSynthesis) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = cfg.speed; u.pitch = 1.15;
+  window.speechSynthesis.speak(u);
+}
+
+// ---------- fireworks canvas ----------
+const cv = document.getElementById('fx'), ctx = cv.getContext('2d');
+function resize(){ cv.width = innerWidth; cv.height = innerHeight; }
+addEventListener('resize', resize); resize();
+let particles = [];
+const COLORS = ['#ff5f6d','#ffc371','#5be584','#4facfe','#ffe66d','#c56cf0','#ff6fb0'];
+function burst(x,y,count=36){
+  const color = COLORS[Math.floor(Math.random()*COLORS.length)];
+  for(let i=0;i<count;i++){
+    const a = (Math.PI*2*i)/count + Math.random()*0.3;
+    const sp = 2+Math.random()*4;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color:COLORS[Math.floor(Math.random()*COLORS.length)]});
+  }
+  sfxPop();
+}
+let finaleActive=false, finaleTimer=null;
+function loop(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  particles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.life-=0.018;
+    ctx.globalAlpha = Math.max(p.life,0);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x,p.y,4,0,7); ctx.fill();
+  });
+  particles = particles.filter(p=>p.life>0);
+  ctx.globalAlpha=1;
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ---------- grid ----------
+const gridEl = document.getElementById('grid');
+function bestCols(n){
+  const w = innerWidth, h = innerHeight*0.72;
+  let best=1,bestScore=0;
+  for(let c=1;c<=10;c++){
+    const r = Math.ceil(n/c);
+    const cw = w/c, ch = h/r;
+    const size = Math.min(cw,ch);
+    if(size>bestScore){ bestScore=size; best=c; }
+  }
+  return best;
+}
+function buildGrid(){
+  gridEl.innerHTML='';
+  const n = cfg.maxNum;
+  const cols = bestCols(n);
+  gridEl.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+  const nums = Array.from({length:n},(_,i)=>i+1);
+  shuffle(nums);
+  nums.forEach(v=>{
+    const b=document.createElement('button');
+    b.className='tile'; b.textContent=v; b.dataset.n=v;
+    b.addEventListener('pointerdown', e=>{ e.preventDefault(); onTap(v,b); }, {passive:false});
+    gridEl.appendChild(b);
+  });
+}
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } }
+
+// ---------- game flow ----------
+const promptEl = document.getElementById('prompt');
+const gaugeFill = document.getElementById('gaugeFill');
+function setGauge(v){
+  gauge = Math.max(0, Math.min(100, v));
+  gaugeFill.style.width = gauge+'%';
+  if(gauge<=0 && cfg.penalty && !broken && cfg.mode!=='free'){ breakGauge(); }
+}
+function breakGauge(){
+  broken = true; clearHint();
+  sfxCrack();
+  gaugeFill.style.background = '#552222';
+  showOverlay('💥 Uh oh! Tap to fix it!', 'Fix it!', ()=>{
+    sfxFix(); broken=false; gaugeFill.style.background='linear-gradient(90deg,#ff5f6d,#ffc371,#5be584)';
+    setGauge(20); hideOverlay(); armHint();
+  });
+}
+function nextTarget(){
+  clearHint();
+  if(cfg.mode==='free'){ promptEl.textContent='Tap any number!'; return; }
+  if(cfg.mode==='sequential'){
+    if(idx>=order.length){ grandFinale(); return; }
+    current = order[idx++];
+  } else {
+    current = 1+Math.floor(Math.random()*cfg.maxNum);
+  }
+  promptEl.textContent = `Find ${current}!`;
+  promptEl.classList.remove('pop'); void promptEl.offsetWidth; promptEl.classList.add('pop');
+  setTimeout(()=>speak(`Find ${current}`), 150);
+  armHint();
+}
+function armHint(){
+  clearHint();
+  hintTimer = setTimeout(()=>{
+    if(!current) return;
+    const el = [...gridEl.children].find(t=>+t.dataset.n===current);
+    if(el) el.classList.add('glow');
+    if(cfg.penalty) setGauge(gauge - cfg.increment/2);
+  }, cfg.hintDelay*1000);
+}
+function clearHint(){ clearTimeout(hintTimer); [...gridEl.children].forEach(t=>t.classList.remove('glow')); }
+
+const appEl = document.getElementById('app'), redFlash = document.getElementById('redFlash'), gaugeTrack = document.getElementById('gaugeTrack');
+const OOPS = ['Oops!','Uh oh!','Whoops!','Try again!'];
+function retrigger(node, cls, ms){ node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); setTimeout(()=>node.classList.remove(cls), ms); }
+function booBoo(tile, x, y){
+  retrigger(appEl,'shake',450);
+  retrigger(redFlash,'on',700);
+  retrigger(tile,'wobble',450);
+  retrigger(gaugeTrack,'hurt',450);
+  const o = document.createElement('div'); o.className='oops'; o.textContent = '🙈 '+OOPS[Math.floor(Math.random()*OOPS.length)];
+  o.style.left = Math.min(Math.max(x,80), innerWidth-80)+'px'; o.style.top = y+'px';
+  document.body.appendChild(o); setTimeout(()=>o.remove(), 900);
+  try{ if(navigator.vibrate) navigator.vibrate([90,40,90]); }catch(e){}
+}
+function onTap(v, el){
+  if(broken || finaleActive) return;
+  const rect = el.getBoundingClientRect();
+  const x = rect.left+rect.width/2, y = rect.top+rect.height/2;
+  if(cfg.mode==='free'){
+    burst(x,y); speak(String(v));
+    return;
+  }
+  if(v===current){
+    burst(x,y); sfxCorrect(); speak(String(v));
+    recordResult(v, true);
+    setGauge(gauge+cfg.increment);
+    setTimeout(()=>{ if(gauge>=100){ grandFinale(); } else { if(cfg.shuffleOnCorrect) buildGrid(); nextTarget(); } }, 550);
+  } else {
+    sfxWrong();
+    recordResult(v, false);
+    booBoo(el, x, y);
+    if(cfg.penalty) setGauge(gauge-10);
+  }
+}
+
+const finaleLayer = document.getElementById('finaleLayer');
+function grandFinale(){
+  finaleActive = true; clearHint();
+  sfxCheer();
+  finaleLayer.classList.add('show');
+  finaleTimer = setInterval(()=>{
+    burst(Math.random()*innerWidth, Math.random()*innerHeight*0.55, 46);
+    burst(Math.random()*innerWidth, Math.random()*innerHeight*0.55, 46);
+    if(Math.random()<0.5) sfxCheer();
+  }, 240);
+}
+function stopFinale(){ finaleActive=false; clearInterval(finaleTimer); finaleLayer.classList.remove('show'); }
+finaleLayer.addEventListener('pointerdown', e=>{ e.preventDefault(); ac(); restart(); });
+
+// overlay
+const overlay=document.getElementById('overlay'), overlayMsg=document.getElementById('overlayMsg'), overlayBtn=document.getElementById('overlayBtn');
+let overlayCb=null;
+function showOverlay(msg,btnLabel,cb){ overlayMsg.textContent=msg; overlayBtn.textContent=btnLabel; overlayCb=cb; overlay.classList.add('show'); }
+function hideOverlay(){ overlay.classList.remove('show'); }
+overlayBtn.addEventListener('pointerdown', e=>{ e.preventDefault(); ac(); if(overlayCb){ const cb=overlayCb; overlayCb=null; cb(); } });
+
+function restart(){
+  stopFinale(); hideOverlay(); setGauge(5); idx=0; broken=false;
+  order = Array.from({length:cfg.maxNum},(_,i)=>i+1);
+  buildGrid();
+  if(cfg.mode!=='free') nextTarget(); else promptEl.textContent='Tap any number!';
+}
+
+// ---------- settings access ----------
+document.getElementById('gearBtn').addEventListener('click', openSettings);
+
+// ---------- settings panel ----------
+const settingsEl=document.getElementById('settings');
+const rangeInput=document.getElementById('rangeInput'), modeOpts=document.getElementById('modeOpts'),
+      penaltyOpts=document.getElementById('penaltyOpts'), speedOpts=document.getElementById('speedOpts'),
+      incOpts=document.getElementById('incOpts'), shuffleOpts=document.getElementById('shuffleOpts'),
+      hintDelayInput=document.getElementById('hintDelayInput');
+const MODES=[['sequential','In Order'],['random','Random'],['free','Free Play']],
+      SPEEDS=[['Slow',0.6],['Normal',0.9],['Fast',1.2]], INCREMENTS=[1,5,10];
+rangeInput.addEventListener('change', ()=>{
+  let v = parseInt(rangeInput.value,10);
+  if(isNaN(v)) v = cfg.maxNum;
+  v = Math.max(2, Math.min(200, v));
+  rangeInput.value = v; cfg.maxNum = v; saveCfg();
+});
+hintDelayInput.addEventListener('change', ()=>{
+  let v = parseInt(hintDelayInput.value,10);
+  if(isNaN(v)) v = cfg.hintDelay;
+  v = Math.max(3, Math.min(120, v));
+  hintDelayInput.value = v; cfg.hintDelay = v; saveCfg();
+});
+function renderOptRow(container, items, isActive, onPick){
+  container.innerHTML='';
+  items.forEach(item=>{
+    const b=document.createElement('button'); b.className='opt'+(isActive(item)?' active':'');
+    b.textContent=item.label; b.addEventListener('click',()=>{ onPick(item); openSettings(); });
+    container.appendChild(b);
+  });
+}
+function openSettings(){
+  rangeInput.value = cfg.maxNum;
+  hintDelayInput.value = cfg.hintDelay;
+  renderOptRow(modeOpts, MODES.map(([v,l])=>({label:l,val:v})), it=>it.val===cfg.mode, it=>{cfg.mode=it.val;saveCfg();});
+  renderOptRow(penaltyOpts, [{label:'On',val:true},{label:'Off (No Fail)',val:false}], it=>it.val===cfg.penalty, it=>{cfg.penalty=it.val;saveCfg();});
+  renderOptRow(incOpts, INCREMENTS.map(n=>({label:'+'+n+'%',val:n})), it=>it.val===cfg.increment, it=>{cfg.increment=it.val;saveCfg();});
+  renderOptRow(shuffleOpts, [{label:'On',val:true},{label:'Off',val:false}], it=>it.val===cfg.shuffleOnCorrect, it=>{cfg.shuffleOnCorrect=it.val;saveCfg();});
+  renderOptRow(speedOpts, SPEEDS.map(([l,v])=>({label:l,val:v})), it=>it.val===cfg.speed, it=>{cfg.speed=it.val;saveCfg();});
+  renderReport();
+  settingsEl.classList.add('show');
+}
+document.getElementById('saveReportBtn').addEventListener('click', saveReportTxt);
+document.getElementById('resetReportBtn').addEventListener('click', resetReport);
+document.getElementById('settingsClose').addEventListener('click', ()=>{
+  settingsEl.classList.remove('show'); restart();
+});
+
+// ---------- mobile shield ----------
+document.addEventListener('contextmenu', e=>e.preventDefault());
+document.addEventListener('gesturestart', e=>e.preventDefault());
+let lastTouch=0;
+document.addEventListener('touchend', e=>{ const now=Date.now(); if(now-lastTouch<300) e.preventDefault(); lastTouch=now; }, {passive:false});
+document.addEventListener('touchmove', e=>{ if(e.scale && e.scale!==1) e.preventDefault(); }, {passive:false});
+
+// unlock audio on first touch
+document.addEventListener('pointerdown', ()=>{ ac(); if(actx.state==='suspended') actx.resume(); }, {once:true});
+
+// ---------- boot ----------
+updateHeaderCounts();
+restart();
+})();
+</script>
+</body>
+</html>

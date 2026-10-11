@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Count the Animals</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%81%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#fff6e0;--ink:#3b2f1e;--card:#fff;--grass:#b9e38b;--grass2:#a3d672;--btn:#ffcf4a;--btnh:#ffbf1f;--good:#4cc36b;--bad:#ef6b5b;--line:#e8d9b5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1f2a3a;--ink:#f4efe2;--card:#2c3a50;--grass:#3f6b3a;--grass2:#375e33;--btn:#e0a92b;--btnh:#f0b93b;--line:#46556e}}
+:root[data-theme="dark"]{--bg:#1f2a3a;--ink:#f4efe2;--card:#2c3a50;--grass:#3f6b3a;--grass2:#375e33;--btn:#e0a92b;--btnh:#f0b93b;--line:#46556e}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;user-select:none}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px 6px}
+h1{margin:0;font-size:clamp(1.3rem,6vw,2.2rem);flex:1;text-align:center;padding-left:46px}
+#gauge{height:38px;margin:0 14px 8px;background:var(--card);border:3px solid var(--line);border-radius:999px;position:relative;overflow:hidden}
+#fill{height:100%;width:50%;background:linear-gradient(90deg,#ffb938,#4cc36b);border-radius:999px;transition:width .4s,background .3s}
+#gtxt{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:1.1rem;text-shadow:0 0 4px var(--card),0 0 4px var(--card)}
+#gauge.hit{animation:shake .35s}
+#gear{width:46px;height:46px;border-radius:50%;border:2px solid var(--line);background:var(--card);font-size:24px;cursor:pointer;color:var(--ink)}
+#prompt{text-align:center;font-size:clamp(1.1rem,4vw,1.6rem);font-weight:700;padding:0 12px 8px;min-height:2em}
+#field{flex:1;position:relative;margin:0 12px;border-radius:24px;overflow:hidden;border:4px solid var(--grass2);background:repeating-linear-gradient(45deg,var(--grass),var(--grass) 22px,var(--grass2) 22px,var(--grass2) 44px)}
+.a{position:absolute;left:0;top:0;font-size:var(--sz,56px);line-height:1;cursor:pointer;will-change:transform}
+.a>span{display:block;animation:bob .6s ease-in-out infinite alternate}
+.reduce .a>span{animation:none}
+.a b{position:absolute;right:-8px;top:-10px;min-width:30px;height:30px;border-radius:15px;background:var(--card);color:var(--ink);border:3px solid var(--good);font-size:16px;display:flex;align-items:center;justify-content:center}
+@keyframes bob{to{transform:translateY(-6px) rotate(4deg)}}
+#choices{display:flex;justify-content:center;gap:12px;padding:14px 12px;min-height:calc(clamp(84px,22vw,130px) + 28px)}
+#choices button{flex:1;max-width:150px;height:clamp(84px,22vw,130px);font-family:inherit;font-weight:800;font-size:clamp(3rem,13vw,5rem);border:0;border-radius:26px;background:var(--btn);color:#3b2f1e;box-shadow:0 7px 0 rgba(0,0,0,.2);cursor:pointer;line-height:1}
+#choices button:hover:not(:disabled){background:var(--btnh)}
+#choices button:active:not(:disabled){transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+#choices button:disabled{opacity:.4;cursor:default}
+#choices button.good{background:var(--good);color:#fff;opacity:1}
+#choices button.bad{background:var(--bad);color:#fff;animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-9px)}75%{transform:translateX(9px)}}
+#cheer{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;font-size:clamp(3rem,16vw,8rem);pointer-events:none;opacity:0}
+#cheer.show{animation:pop 1.1s ease-out}
+@keyframes pop{0%{opacity:0;transform:scale(.4)}25%{opacity:1;transform:scale(1.15)}80%{opacity:1}100%{opacity:0;transform:scale(1)}}
+#end{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;background:rgba(0,0,0,.6);z-index:5;color:#fff;overflow:hidden}
+#end.show{display:flex}
+#end .big{font-size:clamp(4rem,22vw,9rem);animation:pop2 .8s ease-out}
+#end h2{margin:0;font-size:clamp(2rem,10vw,4rem)}
+#end button{font:inherit;font-weight:800;font-size:1.5rem;border:0;border-radius:20px;padding:14px 30px;background:var(--btn);color:#3b2f1e;box-shadow:0 6px 0 rgba(0,0,0,.3);cursor:pointer}
+@keyframes pop2{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.2) rotate(8deg)}100%{transform:scale(1)}}
+.lose .big{animation:drop 1s ease-in}
+@keyframes drop{0%{transform:translateY(-80vh) rotate(0)}60%{transform:translateY(0) rotate(200deg)}75%{transform:translateY(-30px) rotate(180deg)}100%{transform:translateY(0) rotate(180deg)}}
+.conf{position:absolute;top:-60px;font-size:2rem;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(115vh) rotate(540deg)}}
+body.rumble{animation:shake .4s 3}
+dialog{border:3px solid var(--line);border-radius:22px;background:var(--card);color:var(--ink);padding:20px;width:min(92vw,440px);font-family:inherit}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+dialog h2{margin:0 0 8px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);gap:12px;font-weight:700}
+.seg{display:flex;gap:4px}
+.seg button,.act{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:8px 12px;cursor:pointer}
+.seg button.on{background:var(--btn);color:#3b2f1e;border-color:var(--btn)}
+.act{margin-top:12px;width:100%}
+.credit{margin:14px 0 0;text-align:center;font-size:.7rem;opacity:.55}.credit a{color:inherit}
+#goalrow,#maxrow{flex-wrap:wrap}#goalrow input,#maxrow input{flex:1;min-width:140px}#goalv,#maxv{min-width:2.5ch;text-align:right}
+</style>
+</head>
+<body>
+<header>
+  <h1>🦁 Count the Animals</h1>
+  <button id="gear" aria-label="Settings">⚙️</button>
+</header>
+<div id="gauge"><div id="fill"></div><div id="gtxt"></div></div>
+<div id="prompt"></div>
+<div id="field"></div>
+<div id="choices"></div>
+<div id="cheer"></div>
+<div id="end"><div class="big" id="endE"></div><h2 id="endT"></h2><button id="again">Play again</button></div>
+
+<dialog id="dlg">
+  <h2>⚙️ Settings</h2>
+  <div class="row" id="goalrow">Gauge goal <span id="goalv"></span><input type="range" id="goal" min="1" max="100"></div>
+  <div class="row" id="maxrow">Biggest number <span id="maxv"></span><input type="range" id="max" min="1" max="100"></div>
+  <div class="row">Animal speed <div class="seg" data-k="speed"><button data-v="0.6">Slow</button><button data-v="1">Normal</button><button data-v="1.6">Fast</button></div></div>
+  <div class="row">Sound <div class="seg" data-k="sound"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+  <div class="row">Read answers aloud <div class="seg" data-k="speak"><button data-v="true">On</button><button data-v="false">Off</button></div></div>
+  <div class="row">Theme <div class="seg" data-k="theme"><button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+  <div class="row">Calm bobbing <div class="seg" data-k="reduce"><button data-v="false">Off</button><button data-v="true">On</button></div></div>
+  <button class="act" id="restart">Restart game</button>
+  <button class="act" id="close" style="background:var(--btn);color:#3b2f1e;border-color:var(--btn)">Done</button>
+  <p class="credit">Made With ❤️ By <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener noreferrer">KungPowUnicorn</a></p>
+</dialog>
+
+<script>
+const $=s=>document.querySelector(s);
+const KEY='count-animals-v2';
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const S=Object.assign({goal:20,max:10,speed:1,sound:true,speak:false,theme:'auto',reduce:false},load());
+const ANIMALS=[['🐶','dogs'],['🐱','cats'],['🐰','bunnies'],['🐸','frogs'],['🐥','chicks'],['🐷','pigs'],['🐮','cows'],['🐵','monkeys'],['🐼','pandas'],['🦆','ducks'],['🐢','turtles'],['🦊','foxes']];
+let curSz=56,animals=[],target=0,locked=true,last=-1,raf,prev=0,timers=[],gauge=0,tapped=0,ended=false,shown=false,name='';
+const field=$('#field'),choices=$('#choices');
+const later=(f,ms)=>{const t=setTimeout(f,ms);timers.push(t)};
+
+let ac;
+function tone(freqs,dur=.15,type='triangle'){if(!S.sound)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();freqs.forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.value=f;const t=ac.currentTime+i*dur;g.gain.setValueAtTime(.2,t);g.gain.exponentialRampToValueAtTime(.001,t+dur*1.6);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+dur*1.7)})}catch(e){}}
+function say(t){if(!S.speak||!window.speechSynthesis)return;try{speechSynthesis.cancel();speechSynthesis.speak(new SpeechSynthesisUtterance(t))}catch(e){}}
+
+function hud(){const p=Math.max(0,Math.min(100,gauge/S.goal*100));$('#fill').style.width=p+'%';$('#gtxt').textContent=gauge+' / '+S.goal}
+
+function newGame(){ended=false;$('#end').classList.remove('show','lose');$('#end').querySelectorAll('.conf').forEach(e=>e.remove());gauge=1;hud();newRound()}
+
+function newRound(){
+  timers.forEach(clearTimeout);timers=[];cancelAnimationFrame(raf);
+  field.innerHTML='';animals=[];choices.innerHTML='';locked=true;shown=false;tapped=0;
+  target=1+Math.floor(Math.random()*S.max);
+  let i;do{i=Math.floor(Math.random()*ANIMALS.length)}while(i===last);last=i;
+  const emoji=ANIMALS[i][0];name=ANIMALS[i][1];
+  $('#prompt').textContent='Watch the '+name+' come in…';
+  const W=field.clientWidth,H=field.clientHeight;
+  curSz=Math.max(20,Math.min(64,Math.sqrt(W*H/(target*2.6))));field.style.setProperty('--sz',curSz+'px');
+  for(let n=0;n<target;n++){
+    const el=document.createElement('div');el.className='a';el.innerHTML='<span>'+emoji+'</span>';
+    const left=Math.random()<.5;
+    const a={el,x:left?-100:W+100,y:10+Math.random()*Math.max(10,H-curSz*1.3),vx:(left?1:-1)*130,vy:0,in:false,live:false,tap:0};
+    el.onclick=()=>{if(!a.tap){a.tap=++tapped;const b=document.createElement('b');b.textContent=a.tap;el.appendChild(b);tone([500+a.tap*30],.08)}};
+    field.appendChild(el);animals.push(a);
+    later(()=>{a.live=true},300+n*Math.min(450,4000/target)/S.speed);
+  }
+  prev=performance.now();raf=requestAnimationFrame(loop);
+}
+
+function buildChoices(){
+  const top=Math.max(S.max,4),set=new Set([target]);let rad=Math.max(3,Math.ceil(top*.1));
+  while(set.size<4){const lo=Math.max(1,target-rad),hi=Math.min(top,target+rad);set.add(lo+Math.floor(Math.random()*(hi-lo+1)));if(Math.random()<.1)rad++}
+  [...set].sort((a,b)=>a-b).forEach(v=>{const b=document.createElement('button');b.textContent=v;b.onclick=()=>answer(v,b);choices.appendChild(b)});
+  $('#prompt').textContent='How many '+name+' did you count?';
+  locked=false;
+}
+
+function answer(v,btn){
+  if(locked||ended)return;
+  if(v===target){
+    locked=true;btn.classList.add('good');[...choices.children].forEach(b=>{if(b!==btn)b.disabled=true});
+    gauge=Math.min(S.goal,gauge+1);hud();
+    if(gauge>=S.goal){later(win,500);tone([523,659,784,1047],.12);return}
+    tone([523,659,784,1047],.1);
+    const c=$('#cheer');c.textContent=['🎉','🌟','👏','🥳'][Math.floor(Math.random()*4)]+' '+target;c.classList.remove('show');void c.offsetWidth;c.classList.add('show');
+    say('Yes! '+target);later(newRound,1500);
+  }else{
+    gauge--;hud();btn.classList.add('bad');btn.disabled=true;tone([220,185],.18);
+    const g=$('#gauge');g.classList.remove('hit');void g.offsetWidth;g.classList.add('hit');
+    if(gauge<=0){locked=true;later(lose,600)}else say('Try again');
+  }
+}
+
+function confetti(){const e=$('#end');const em=['🎉','⭐','🎊','🌟','🦁','🐼','🐸'];for(let i=0;i<45;i++){const s=document.createElement('span');s.className='conf';s.textContent=em[i%em.length];s.style.left=Math.random()*100+'%';s.style.animationDuration=(2+Math.random()*2.5)+'s';s.style.animationDelay=Math.random()*1.5+'s';e.appendChild(s)}}
+function win(){
+  ended=true;cancelAnimationFrame(raf);
+  $('#endE').textContent='🏆';$('#endT').textContent='You Win!';$('#end').classList.add('show');confetti();
+  const mel=[523,523,523,659,784,659,784,1047,1047];tone(mel,.16);later(()=>tone([784,1047,1319,1568],.2),1700);say('You win! Amazing!');
+}
+function lose(){
+  ended=true;cancelAnimationFrame(raf);
+  $('#endE').textContent='💥';$('#endT').textContent='Game Over';$('#end').classList.add('show','lose');
+  document.body.classList.add('rumble');later(()=>document.body.classList.remove('rumble'),1300);
+  tone([392,370,349,330,196],.28,'sawtooth');say('Game over');
+}
+
+function loop(t){
+  const dt=Math.min(.05,(t-prev)/1000)*S.speed;prev=t;
+  const W=field.clientWidth,H=field.clientHeight,pad=curSz*1.1;
+  for(const a of animals){
+    if(!a.live)continue;
+    if(!a.in){ // walk straight in; no wandering until fully inside
+      a.x+=a.vx*dt*(1/S.speed)*S.speed;
+      if(a.x>=0&&a.x<=W-pad){a.in=true;a.vx=(a.vx>0?1:-1)*(40+Math.random()*40);a.vy=(Math.random()-.5)*50}
+    }else{
+      if(Math.random()<.01)a.vy=(Math.random()-.5)*70;
+      if(Math.random()<.004)a.vx=-a.vx;
+      a.x+=a.vx*dt;a.y+=a.vy*dt;
+      if(a.x<0){a.x=0;a.vx=Math.abs(a.vx)}
+      if(a.x>W-pad){a.x=W-pad;a.vx=-Math.abs(a.vx)}
+    }
+    if(a.y<0){a.y=0;a.vy=Math.abs(a.vy)}
+    if(a.y>H-pad){a.y=H-pad;a.vy=-Math.abs(a.vy)}
+  }
+  // gentle push-apart so animals never hide behind each other
+  const sep=pad*.9;
+  for(let i=0;i<animals.length;i++)for(let j=i+1;j<animals.length;j++){
+    const p=animals[i],q=animals[j];if(!p.in||!q.in)continue;
+    const dx=q.x-p.x,dy=q.y-p.y,d=Math.hypot(dx,dy)||.01;
+    if(d<sep){const m=(sep-d)/2,ux=dx/d,uy=dy/d;p.x-=ux*m;p.y-=uy*m;q.x+=ux*m;q.y+=uy*m}
+  }
+  for(const a of animals){a.x=Math.max(a.in?0:a.x,a.in?Math.min(a.x,W-pad):a.x);const f=a.vx<0?-1:1;a.el.style.transform=`translate(${a.x}px,${a.y}px) scaleX(${f})`;const b=a.el.querySelector('b');if(b)b.style.transform=`scaleX(${f})`}
+  if(!shown&&animals.length&&animals.every(a=>a.in)){shown=true;later(buildChoices,500)}
+  raf=requestAnimationFrame(loop);
+}
+
+const dlg=$('#dlg');
+function applyTheme(){const r=document.documentElement;if(S.theme==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',S.theme);document.body.classList.toggle('reduce',S.reduce)}
+function syncSeg(){document.querySelectorAll('.seg').forEach(g=>{const k=g.dataset.k;g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(S[k])===b.dataset.v))});$('#goal').value=S.goal;$('#goalv').textContent=S.goal;$('#max').value=S.max;$('#maxv').textContent=S.max}
+document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{
+  const k=b.parentNode.dataset.k,v=b.dataset.v;
+  S[k]=v==='true'?true:v==='false'?false:(isNaN(v)?v:Number(v));
+  syncSeg();applyTheme();save();
+  if(k==='sound'&&S.sound)tone([660]);
+  if(k==='speak')say('Reading aloud');
+});
+$('#goal').oninput=e=>{S.goal=Number(e.target.value);$('#goalv').textContent=S.goal;save()};
+$('#goal').onchange=()=>newGame();
+$('#max').oninput=e=>{S.max=Number(e.target.value);$('#maxv').textContent=S.max;save()};
+$('#max').onchange=()=>newRound();
+$('#gear').onclick=()=>{syncSeg();dlg.showModal()};
+$('#close').onclick=()=>dlg.close();
+dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
+$('#restart').onclick=()=>{dlg.close();newGame()};
+$('#again').onclick=newGame;
+
+applyTheme();newGame();
+</script>
+</body>
+</html>

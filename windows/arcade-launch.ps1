@@ -46,9 +46,15 @@ $script:FallbackGames = @{
     goldeneye_007    = @{ "2" = "horizontal_halves"; "3" = "quadrants"; "4" = "quadrants" }
 }
 
+# UTF8 explicitly: Windows PowerShell reads a file without a BOM as ANSI,
+# which would mangle the catalog's icons.
+function Read-ArcadeCatalogFile {
+    return Get-Content $script:catalogPath -Raw -Encoding UTF8 | ConvertFrom-Json
+}
+
 function Get-ArcadeCatalog {
     if (-not (Test-Path $script:catalogPath)) { return @() }
-    $cat = Get-Content $script:catalogPath -Raw | ConvertFrom-Json
+    $cat = Read-ArcadeCatalogFile
     $boots = @{}
     if (Test-Path $script:bootsPath) {
         $b = Get-Content $script:bootsPath -Raw | ConvertFrom-Json
@@ -59,23 +65,50 @@ function Get-ArcadeCatalog {
         $boot = $null
         if ($game.boot) { $boot = [string]$game.boot }
         if ($boots.ContainsKey($game.id) -and $boots[$game.id]) { $boot = $boots[$game.id] }
-        $rom = Resolve-ArcadeContent $game $boot
+        $web = Resolve-ArcadeWeb $game
+        $rom = if ($game.kind -eq "web") { $null } else { Resolve-ArcadeContent $game $boot }
         $native = Resolve-ArcadeNative $game
-        $ready = if ($native) { $true } else { [bool]$rom }
+        $ready = if ($web -or $native) { $true } else { [bool]$rom }
         $modes = if ($null -eq $game.modes) { @("solo", "host", "join") } else { @($game.modes) }
         $out += [ordered]@{
             id        = [string]$game.id
             title     = [string]$game.title
             core      = [string]$game.core
             kind      = if ($game.kind) { [string]$game.kind } else { "retroarch" }
-            modes     = $modes
+            # @() again: the if above unrolls a one-mode list to the bare
+            # string "solo", which the kid UI drew as buttons s, o, l, o.
+            modes     = @($modes)
             boot      = $boot
             ready     = $ready
-            readyPath = $(if ($native) { $native } else { $rom })
+            readyPath = $(if ($web) { $web } elseif ($native) { $native } else { $rom })
             modeLabels = $game.mode_labels
+            shelf     = [string]$game.shelf
+            icon      = [string]$game.icon
+            href      = $web
+            online    = [bool]$game.url
         }
     }
     return $out
+}
+
+# The catalog's shelves, in the order Home Arcade shows them.
+function Get-ArcadeShelves {
+    if (-not (Test-Path $script:catalogPath)) { return @() }
+    return @((Read-ArcadeCatalogFile).shelves | Where-Object { $_ })
+}
+
+# A web game plays inside the Home Arcade page itself. "page" is a file under
+# www\ that the agent serves (the game rides to every PC with www\); "url" is
+# the author's own site, for a game we may not copy, and needs the internet.
+# Returns what the page opens, or $null while the files are not here yet.
+function Resolve-ArcadeWeb($game) {
+    if ($game.kind -ne "web") { return $null }
+    if ($game.url) { return [string]$game.url }
+    $page = [string]$game.page
+    if (-not $page.StartsWith("www/") -or -not (Test-Path -LiteralPath (Join-Path $root $page) -PathType Leaf)) {
+        return $null
+    }
+    return "/" + (($page.Substring(4) -split "/" | ForEach-Object { [Uri]::EscapeDataString($_) }) -join "/")
 }
 
 function Get-ArcadeDosZip($game) {
@@ -397,6 +430,7 @@ function Start-ArcadeLocalServer($game, [string]$mode) {
 }
 
 function Start-ArcadeGame($game, [string]$mode, [string]$joinHost, [bool]$bigScreen) {
+    if ($game.kind -eq "web") { throw "$($game.title) opens inside Home Arcade, not as a program." }
     Update-ArcadePlayerSaves
     $player = (Get-ArcadePlayers).current
 

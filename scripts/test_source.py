@@ -59,6 +59,12 @@ class CatalogTests(unittest.TestCase):
             if modes is not None:
                 self.assertTrue(modes)
                 self.assertTrue(set(modes) <= ALLOWED_MODES)
+            if game.get("kind") == "web":
+                self.assertEqual(modes, ["solo"], f"{gid}: a web game only has Play")
+                self.assertEqual(("page" in game) + ("url" in game), 1, f"{gid}: page or url, not both")
+                self.assertNotIn("rom", game)
+                self.assertNotIn("exe", game)
+                continue
             if game.get("kind") == "native" or game.get("exe"):
                 self.assertTrue(game["exe"])
                 self.assertFalse(Path(game["exe"]).is_absolute())
@@ -159,6 +165,18 @@ class CatalogTests(unittest.TestCase):
         mindustry = next(g for g in load_catalog() if g["id"] == "mindustry")
         self.assertTrue(mindustry["env"]["MINDUSTRY_DATA_DIR"].startswith("{saves}/"))
 
+    def test_every_game_is_on_a_shelf(self):
+        shelves = json.loads((ROOT / "catalog" / "games.json").read_text(encoding="utf-8"))["shelves"]
+        ids = [s["id"] for s in shelves]
+        self.assertEqual(len(ids), len(set(ids)))
+        for shelf in shelves:
+            self.assertRegex(shelf["id"], ID_RE)
+            self.assertTrue(shelf["title"].strip())
+        for game in load_catalog():
+            self.assertIn(game.get("shelf"), ids, f"{game['id']} is on no shelf")
+            if "icon" in game:
+                self.assertTrue(game["icon"].strip())
+
     def test_mindustry_family_game_joins_through_the_hidden_mod(self):
         mindustry = next(g for g in load_catalog() if g["id"] == "mindustry")
         self.assertEqual(mindustry["modes"], ["solo", "family"])
@@ -182,12 +200,62 @@ class CatalogTests(unittest.TestCase):
 
     def test_rom_paths_are_not_absolute(self):
         for game in load_catalog():
-            if game.get("kind") == "native" or game.get("exe"):
+            if game.get("kind") in ("native", "web") or game.get("exe"):
                 continue
             self.assertFalse(Path(game["rom"]).is_absolute())
             for alt in game.get("rom_alts") or []:
                 self.assertFalse(Path(alt).is_absolute())
                 self.assertTrue(alt.startswith("roms/"))
+
+
+class WebGameTests(unittest.TestCase):
+    """Web games: copies under www/games/<id>/ (scripts/vendor_web_games.py)
+    for what we may copy, the author's site for what we may not."""
+
+    def web_games(self) -> list[dict]:
+        return [g for g in load_catalog() if g.get("kind") == "web"]
+
+    def test_pages_come_from_a_pinned_commit(self):
+        for game in self.web_games():
+            if "page" not in game:
+                continue
+            gid = game["id"]
+            self.assertTrue(game["page"].startswith(f"www/games/{gid}/"), gid)
+            self.assertTrue((ROOT / game["page"]).is_file(), f"{gid}: run scripts/vendor_web_games.py")
+            self.assertRegex(game["source"], r"^https://github\.com/[\w.-]+/[\w.-]+/tree/[0-9a-f]{40}$")
+
+    def test_url_games_name_their_source(self):
+        for game in self.web_games():
+            if "url" in game:
+                self.assertTrue(game["url"].startswith("https://"), game["id"])
+                self.assertTrue(game["source"].startswith("https://github.com/"), game["id"])
+
+    def test_every_copy_is_in_the_catalog_and_licensed(self):
+        pages = {g["id"] for g in self.web_games() if "page" in g}
+        games_dir = ROOT / "www" / "games"
+        copies = {p.name for p in games_dir.iterdir() if p.is_dir()} if games_dir.is_dir() else set()
+        self.assertEqual(copies, pages)
+        for gid in copies:
+            d = games_dir / gid
+            readme = (d / "README.md").read_text(encoding="utf-8") if (d / "README.md").is_file() else ""
+            self.assertTrue((d / "LICENSE").is_file() or "MIT" in readme, f"{gid}: no license to copy it under")
+
+    def test_games_list_matches_the_copy(self):
+        # Mika's Playhouse finds its games through __games.json.
+        for game in self.web_games():
+            if "page" not in game:
+                continue
+            d = ROOT / "www" / "games" / game["id"]
+            listed = json.loads((d / "__games.json").read_text(encoding="utf-8"))
+            found = sorted(p.relative_to(d).as_posix() for p in d.rglob("*.html"))
+            found.remove("index.html")
+            self.assertEqual(listed, found, game["id"])
+
+    def test_agent_types_every_file_it_serves(self):
+        agent = (ROOT / "windows" / "arcade-agent.ps1").read_text(encoding="utf-8")
+        typed = set(re.findall(r'"(\.[a-z0-9]+)"\s*=', agent))
+        exts = {p.suffix.lower() for p in (ROOT / "www").rglob("*") if p.is_file() and p.suffix}
+        self.assertEqual(exts - typed, set())
 
 
 class PlayerTests(unittest.TestCase):
@@ -238,6 +306,7 @@ class WwwTests(unittest.TestCase):
         self.assertIn("/api/players", js)
         self.assertIn("/api/player", js)
         self.assertIn('id="player"', html)
+        self.assertIn("#/play/", js)
 
 
 class HubExampleTests(unittest.TestCase):

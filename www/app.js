@@ -5,8 +5,11 @@ const playerDiv = document.getElementById("player");
 
 function route() {
   const hash = location.hash || "#/";
-  navPlay.classList.toggle("active", hash === "#/");
+  const web = hash.match(/^#\/play\/([a-z0-9_]+)$/);
+  navPlay.classList.toggle("active", hash === "#/" || !!web);
   navSettings.classList.toggle("active", hash === "#/settings");
+  if (web) return openWebGame(web[1]);
+  closeWebGame();
   if (hash === "#/settings") renderSettings();
   else renderPlay();
 }
@@ -62,39 +65,133 @@ async function api(path, opts) {
   return data;
 }
 
+// Every game is on one page, on the catalog's shelves in the catalog's order.
+// A game on no shelf (or an agent too old to send shelves) goes in the last.
 async function renderPlay() {
   app.innerHTML = "Loading…";
   try {
     const data = await api("/api/games");
-    const grid = document.createElement("div");
-    grid.className = "grid";
+    const shelves = (data.shelves || []).map((s) => ({ id: s.id, title: s.title, games: [] }));
+    const more = { id: "more", title: shelves.length ? "More games" : "", games: [] };
     for (const game of data.games) {
-      const card = document.createElement("div");
-      card.className = "card" + (game.ready ? "" : " soon");
-      const h = document.createElement("h2");
-      h.textContent = game.ready ? game.title : game.title + " (coming soon)";
-      card.appendChild(h);
-      const actions = document.createElement("div");
-      actions.className = "actions";
-      const modes = game.modes && game.modes.length ? game.modes : ["solo", "host", "join"];
-      const labels = { solo: "Play", host: "Host", join: "Join", family: "Family game" };
-      const cls = { solo: "play", host: "host", join: "join", family: "join" };
-      for (const mode of modes) {
-        const btn = document.createElement("button");
-        btn.className = cls[mode] || "play";
-        btn.textContent = (game.modeLabels && game.modeLabels[mode]) || labels[mode] || mode;
-        btn.disabled = !game.ready;
-        btn.addEventListener("click", () => play(game.id, mode));
-        actions.appendChild(btn);
-      }
-      card.appendChild(actions);
-      grid.appendChild(card);
+      (shelves.find((s) => s.id === game.shelf) || more).games.push(game);
     }
     app.innerHTML = "";
-    app.appendChild(grid);
+    for (const shelf of shelves.concat(more)) {
+      if (!shelf.games.length) continue;
+      const section = document.createElement("section");
+      section.className = "shelf shelf-" + shelf.id;
+      if (shelf.title) {
+        const h = document.createElement("h2");
+        h.textContent = shelf.title;
+        section.appendChild(h);
+      }
+      const grid = document.createElement("div");
+      grid.className = "grid";
+      for (const game of shelf.games) grid.appendChild(game.kind === "web" ? webCard(game) : gameCard(game));
+      section.appendChild(grid);
+      app.appendChild(section);
+    }
   } catch (err) {
     app.innerHTML = '<p class="error">' + err.message + "</p>";
   }
+}
+
+function iconFor(game) {
+  const span = document.createElement("span");
+  span.className = "icon";
+  span.setAttribute("aria-hidden", "true");
+  span.textContent = game.icon || "🎮";
+  return span;
+}
+
+function gameCard(game) {
+  const card = document.createElement("div");
+  card.className = "card" + (game.ready ? "" : " soon");
+  const h = document.createElement("h3");
+  h.className = "title";
+  h.textContent = game.ready ? game.title : game.title + " (coming soon)";
+  card.append(iconFor(game), h);
+  const actions = document.createElement("div");
+  actions.className = "actions";
+  const modes = game.modes && game.modes.length ? game.modes : ["solo", "host", "join"];
+  const labels = { solo: "Play", host: "Host", join: "Join", family: "Family game" };
+  const cls = { solo: "play", host: "host", join: "join", family: "join" };
+  for (const mode of modes) {
+    const btn = document.createElement("button");
+    btn.className = cls[mode] || "play";
+    btn.textContent = (game.modeLabels && game.modeLabels[mode]) || labels[mode] || mode;
+    btn.disabled = !game.ready;
+    btn.addEventListener("click", () => play(game.id, mode));
+    actions.appendChild(btn);
+  }
+  card.appendChild(actions);
+  return card;
+}
+
+// A web game is one big button: the little ones it is for cannot aim at a
+// small one.
+function webCard(game) {
+  const card = document.createElement("button");
+  card.className = "card web" + (game.ready ? "" : " soon");
+  card.disabled = !game.ready || !game.href;
+  const title = document.createElement("span");
+  title.className = "title";
+  title.textContent = game.ready ? game.title : game.title + " (coming soon)";
+  card.append(iconFor(game), title);
+  if (game.online) {
+    const note = document.createElement("span");
+    note.className = "note";
+    note.textContent = "Needs the internet";
+    card.appendChild(note);
+  }
+  card.addEventListener("click", () => {
+    // Fullscreen has to start in the click itself, so the browser's tabs and
+    // the taskbar are out of reach before the game opens.
+    const root = document.documentElement;
+    if (root.requestFullscreen) root.requestFullscreen().catch(() => {});
+    location.hash = "#/play/" + game.id;
+  });
+  return card;
+}
+
+// Web games play here, over the shelves. "Arcade" (bottom left, clear of the
+// games' own buttons), Esc or Back closes one. The frame gets no fullscreen
+// of its own, so a game that asks for it cannot cover that button.
+async function openWebGame(id) {
+  let game = null;
+  try {
+    game = (await api("/api/games")).games.find((g) => g.id === id);
+  } catch (err) {
+    alert(err.message);
+  }
+  if (location.hash !== "#/play/" + id) return;
+  if (!game || !game.href) {
+    location.hash = "#/";
+    return;
+  }
+  closeWebGame(true);
+  const layer = document.createElement("div");
+  layer.id = "web-player";
+  const frame = document.createElement("iframe");
+  frame.src = game.href;
+  frame.title = game.title;
+  frame.allow = "autoplay";
+  const back = document.createElement("button");
+  back.id = "web-back";
+  back.textContent = "⬅ Arcade";
+  back.addEventListener("click", () => { location.hash = "#/"; });
+  layer.append(frame, back);
+  document.body.appendChild(layer);
+  document.body.classList.add("playing");
+  frame.focus();
+}
+
+function closeWebGame(keepFullscreen) {
+  const layer = document.getElementById("web-player");
+  if (layer) layer.remove();
+  document.body.classList.remove("playing");
+  if (!keepFullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
 }
 
 async function play(id, mode) {
@@ -192,6 +289,9 @@ async function fillFiles(block, game) {
   });
 }
 
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && document.getElementById("web-player")) location.hash = "#/";
+});
 window.addEventListener("hashchange", route);
 renderPlayer();
 route();

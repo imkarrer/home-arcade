@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mika's Adorable Playhouse</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A6%84%3C/text%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#FF6FA5">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Playhouse">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFF6E9;--surface:#fff;--ink:#3B2A4A;--muted:#7A6A88;--accent:#FF6FA5;--accent2:#4FC3C7;--line:#F0DFC8;--shadow:rgba(59,42,74,.12);
+--min:280px;--gap:20px;--font:'Fredoka','Trebuchet MS','Segoe UI',sans-serif;--mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font);min-height:100dvh;padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0)}
+header{display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:16px;padding:20px clamp(16px,4vw,40px) 8px}
+.controls,.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;position:relative}
+.tools{justify-content:flex-end}
+.btn,select,input[type=search]{font:inherit;font-size:.95rem;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:8px 14px}
+.btn{font-weight:600;cursor:pointer;transition:border-color .15s,transform .15s;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--accent)}.btn:active{transform:scale(.96)}
+.btn[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.icon{padding:8px 12px}
+input[type=search]{width:190px}
+:focus-visible{outline:3px solid var(--accent2);outline-offset:2px}
+.menu{position:absolute;top:calc(100% + 8px);left:0;z-index:10;width:280px;background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:14px;box-shadow:0 12px 30px var(--shadow);display:flex;flex-direction:column;gap:12px}
+.menu[hidden]{display:none}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:.95rem}
+.row select{padding:4px 8px;border-radius:10px}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sw{width:34px;height:34px;border-radius:50%;border:3px solid var(--line);cursor:pointer;padding:0}
+.sw[aria-pressed=true]{border-color:var(--ink);transform:scale(1.12)}
+.titles{text-align:center}
+h1{margin:0;font-size:clamp(1.8rem,5vw,3rem);font-weight:700;line-height:1.1;color:var(--accent)}
+#tagline{margin:6px 0 0;color:var(--muted)}
+main{display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--min),1fr));gap:var(--gap);padding:24px clamp(16px,4vw,40px) 48px;max-width:1400px;margin:0 auto}
+.group{grid-column:1/-1;margin:12px 0 -4px;font-size:1.2rem;color:var(--muted);font-family:var(--mono);border-bottom:2px dashed var(--line);padding-bottom:6px}
+.cardwrap{position:relative}
+.card{display:flex;flex-direction:column;justify-content:center;gap:16px;height:100%;text-decoration:none;color:inherit;background:var(--surface);border:3px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 4px 0 var(--shadow);transition:transform .15s,box-shadow .15s,border-color .15s}
+.card:hover{transform:translateY(-4px);box-shadow:0 10px 0 var(--shadow);border-color:var(--accent)}
+.top{display:flex;align-items:center;gap:10px;padding-right:36px}
+.top img{width:56px;height:56px;border-radius:12px;object-fit:contain;background:var(--bg);flex:none}
+.badge{font-family:var(--mono);font-size:.75rem;color:var(--muted);background:var(--bg);border-radius:8px;padding:4px 8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;direction:rtl;text-align:left}
+.card h2{margin:0;font-size:1.35rem;font-weight:600;line-height:1.25;overflow-wrap:anywhere}
+.star{position:absolute;top:14px;right:14px;background:none;border:0;font-size:1.5rem;line-height:1;cursor:pointer;color:var(--line);padding:4px}
+.star[aria-pressed=true],.star:hover{color:#F5B400}
+[hidden]{display:none!important}
+.note{margin:0;font-size:.8rem;color:var(--muted);line-height:1.4}
+#tagline:empty{display:none}
+.menu .btn{text-align:center}
+.menu{max-height:calc(100dvh - 120px);overflow-y:auto}
+.chip{font-weight:600;font-size:.9rem;background:var(--surface);border:2px solid var(--line);border-radius:999px;padding:6px 12px;white-space:nowrap}
+.tfields{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin:14px 0 6px;font-weight:600;color:var(--muted)}
+.tfields label{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.8rem}
+.tfields span{font-size:1.4rem;padding-bottom:8px}
+.tfields input,.mathin{font:inherit;font-size:1.3rem;width:4.5rem;text-align:center;color:var(--ink);background:var(--bg);border:2px solid var(--line);border-radius:12px;padding:6px}
+.mathin{width:7rem}
+.presets,.dlgbtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.bigtime{font-family:var(--mono);font-size:2.4rem;text-align:center;color:var(--accent);margin:8px 0}
+#tStopBox,#mathBox{text-align:center}
+#tErr{text-align:center;min-height:1.2em}
+#lockScreen{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:16px;min-height:100dvh;padding:24px;background:var(--bg);width:100%}
+#lockBtn{opacity:.55;font-size:1.4rem}
+body.locked{height:auto;overflow:auto;display:block}
+body.locked header{display:none}
+body.locked main{display:block;padding:0;max-width:none}
+body.locked main>:not(#lockScreen){display:none}
+.state{grid-column:1/-1;text-align:center;color:var(--muted);padding:48px 0}
+#viewer{grid-column:1/-1;display:flex;flex-direction:column;min-height:0;flex:1}
+#viewer[hidden]{display:none}
+.vbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px clamp(12px,3vw,24px)}
+.vbar strong{flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#frame{flex:1;width:100%;border:0;background:#fff;min-height:60vh}
+body.playing{height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+body.playing main{flex:1;min-height:0;display:flex;padding:0;max-width:none;width:100%}
+body.playing main>:not(#viewer){display:none}
+body.playing header{padding:8px clamp(12px,3vw,24px) 0}
+body.playing h1{font-size:1.2rem}
+body.playing .tools,body.playing #tagline{display:none}
+#revealTab{display:none;position:fixed;top:env(safe-area-inset-top,0px);left:50%;transform:translateX(-50%);z-index:20;padding:0 18px;line-height:1.5;border-top:0;border-radius:0 0 14px 14px;opacity:.85}
+#revealTab:hover{opacity:1}
+body.hdr-off #revealTab{display:block}
+body.hdr-off header,body.hdr-off.playing header{display:block;padding:0}
+body.hdr-off header>:not(#revealTab):not(dialog):not(#picker){display:none}
+dialog{border:3px solid var(--line);border-radius:24px;background:var(--surface);color:var(--ink);max-width:440px;width:calc(100% - 32px);padding:24px;font-family:var(--font)}
+dialog::backdrop{background:rgba(20,14,30,.55)}
+dialog h2{margin:0 0 10px;color:var(--accent)}
+dialog p{margin:0 0 14px;line-height:1.5}
+dialog a{color:var(--accent2);font-weight:600}
+.credits{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;background:var(--bg);border:2px solid var(--line);border-radius:16px;padding:14px;margin:0 0 16px}
+body[data-density=compact]{--min:220px;--gap:12px}
+body[data-density=roomy]{--min:340px;--gap:28px}
+@media(max-width:760px){header{grid-template-columns:1fr}.titles{order:-1}.controls,.tools{justify-content:center}.menu{left:50%;transform:translateX(-50%)}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body data-density="cozy">
+<header>
+  <div class="controls">
+    <button class="btn" id="settingsBtn" aria-expanded="false" aria-controls="settingsMenu">Settings</button>
+    <div class="menu" id="settingsMenu" hidden>
+      <div><div class="row" style="margin-bottom:8px">Color theme</div><div class="swatches" id="swatches"></div></div>
+      <label class="row">Card size<select id="density"><option value="compact">Compact</option><option value="cozy">Cozy</option><option value="roomy">Roomy</option></select></label>
+      <label class="row">Font<select id="font"></select></label>
+      <label class="row">Text size<select id="fsize"></select></label>
+      <label class="row">Play inside dashboard<input type="checkbox" id="embed"></label>
+      <label class="row">Auto-hide header while playing<input type="checkbox" id="autohide"></label>
+      <label class="row">Sound<input type="checkbox" id="sound"></label>
+      <div class="row">Games found<span id="count">0</span></div>
+      <div class="row" id="offRow" hidden>Offline copy<span id="offStatus">Checking…</span></div>
+      <button class="btn" id="installBtn" hidden>Install app</button>
+      <p class="note" id="iosNote" hidden>To install on iPhone or iPad: tap Share, then Add to Home Screen.</p>
+      <button class="btn" id="timerBtn">⏱ Timer</button>
+    </div>
+    <button class="btn" id="aboutBtn">About</button>
+    <button class="btn icon" id="hideBtn" title="Hide header (H)" aria-label="Hide header">▲</button>
+    <span class="chip tchip" hidden></span>
+  </div>
+  <div class="titles">
+    <h1>Mika's Adorable Playhouse</h1>
+    <p id="tagline" aria-live="polite">Looking for games…</p>
+  </div>
+  <div class="tools">
+    <input type="search" id="search" placeholder="Search games ( / )" aria-label="Search games">
+    <select id="sort" aria-label="Sort games"><option value="az">A–Z</option><option value="folder">By folder</option></select>
+    <button class="btn icon" id="favOnly" aria-pressed="false" title="Favorites only">★</button>
+    <button class="btn icon" id="random" title="Surprise me">🎲</button>
+    <button class="btn icon" id="refresh" title="Rescan games">↻</button>
+  </div>
+  <button class="btn" id="revealTab" aria-label="Show header" title="Show header (H)">▼</button>
+  <input type="file" id="picker" webkitdirectory multiple hidden>
+  <dialog id="timerDialog" aria-labelledby="tTitle">
+    <h2 id="tTitle">Timer</h2>
+    <div id="tSet">
+      <p>Choose how long the games can be played. When time is up, the Playhouse closes and a parent has to unlock it with a quick math question.</p>
+      <div class="tfields">
+        <label>hh<input id="tH" type="number" min="0" inputmode="numeric" placeholder="00"></label><span>:</span>
+        <label>mm<input id="tM" type="number" min="0" inputmode="numeric" placeholder="00"></label><span>:</span>
+        <label>ss<input id="tS" type="number" min="0" inputmode="numeric" placeholder="00"></label>
+      </div>
+      <div class="presets"><button class="btn" data-s="900">15 min</button><button class="btn" data-s="1800">30 min</button><button class="btn" data-s="3600">1 hour</button></div>
+      <p class="note" id="tErr" role="alert"></p>
+      <div class="dlgbtns"><button class="btn" id="tStart">Start timer</button><button class="btn tclose">Close</button></div>
+    </div>
+    <div id="tRun" hidden>
+      <p style="text-align:center;margin:0">Time left</p>
+      <div class="bigtime" id="tLeft">0:00</div>
+      <div id="tStopBox"></div>
+      <div class="dlgbtns"><button class="btn" id="tStop">Stop timer</button><button class="btn tclose">Close</button></div>
+    </div>
+  </dialog>
+  <dialog id="aboutDialog" aria-labelledby="aboutTitle">
+    <h2 id="aboutTitle">About</h2>
+    <p>Welcome to Mika's Adorable Playhouse! This is a cozy little collection of educational games for toddlers and kids, where learning looks suspiciously like playing.</p>
+    <p>Expect lots of tapping, plenty of giggling, and at least one very enthusiastic poke at the screen. Grown-ups are welcome too, but you may have to wait your turn!</p>
+    <div class="credits">
+      <span>Made with ❤️ by <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener">KungPowUnicorn</a></span>
+      <a href="https://github.com/KungPowUnicorn/map" target="_blank" rel="noopener">GitHub</a>
+    </div>
+    <button class="btn" id="aboutClose">Close</button>
+  </dialog>
+</header>
+<main id="grid">
+  <p class="state">Loading games…</p>
+  <noscript><p class="state">This page needs JavaScript. Open it in a regular browser such as Chrome or Safari, not a file preview.</p></noscript>
+  <section id="lockScreen" hidden>
+    <div id="mathBox"></div>
+    <button class="btn" id="lockBtn" aria-label="Parent unlock">🔒</button>
+  </section>
+  <section id="viewer" hidden>
+    <div class="vbar">
+      <button class="btn" id="vBack">← All games</button>
+      <strong id="vTitle"></strong>
+      <span class="chip tchip" hidden></span>
+      <button class="btn icon" id="vPrev" title="Previous game">◀</button>
+      <button class="btn icon" id="vNext" title="Next game">▶</button>
+      <button class="btn icon" id="vReload" title="Restart game">↻</button>
+      <button class="btn icon" id="vFull" title="Fullscreen">⛶</button>
+      <a class="btn icon" id="vNew" target="_blank" rel="noopener" title="Open in new tab">↗</a>
+    </div>
+    <iframe id="frame" title="Game" allow="autoplay; fullscreen"></iframe>
+  </section>
+</main>
+
+<script>
+const REPO='KungPowUnicorn/map',CACHE_KEY='mph_cache_v4',TTL=10*60*1000;
+const THEMES={
+ sunny:{n:'Sunny',bg:'#FFF6E9',surface:'#FFFFFF',ink:'#3B2A4A',muted:'#7A6A88',accent:'#FF6FA5',accent2:'#4FC3C7',line:'#F0DFC8',shadow:'rgba(59,42,74,.12)'},
+ ocean:{n:'Ocean',bg:'#E6F6FB',surface:'#FFFFFF',ink:'#12384A',muted:'#4F7C8F',accent:'#0A8FC7',accent2:'#F2A33A',line:'#BFE3F0',shadow:'rgba(18,56,74,.14)'},
+ forest:{n:'Forest',bg:'#EAF4E4',surface:'#FFFFFF',ink:'#1F3A28',muted:'#5C7C63',accent:'#2E9E5B',accent2:'#E8803A',line:'#CCE5C1',shadow:'rgba(31,58,40,.14)'},
+ grape:{n:'Grape',bg:'#F1E9FB',surface:'#FFFFFF',ink:'#2E1A47',muted:'#75609A',accent:'#8E4BD6',accent2:'#F0B429',line:'#DCCBF2',shadow:'rgba(46,26,71,.14)'},
+ sunset:{n:'Sunset',bg:'#FFEFE2',surface:'#FFFFFF',ink:'#4A2420',muted:'#8F5E54',accent:'#F0603A',accent2:'#7B5BD6',line:'#F6D4BC',shadow:'rgba(74,36,32,.14)'},
+ midnight:{n:'Midnight',d:1,bg:'#231A30',surface:'#30243F',ink:'#FFEFD9',muted:'#B9A9CC',accent:'#FF8DBA',accent2:'#6FD6D9',line:'#46375A',shadow:'rgba(0,0,0,.45)'},
+ deepsea:{n:'Deep Sea',d:1,bg:'#0F2733',surface:'#17394A',ink:'#E4F6FF',muted:'#8DB7C9',accent:'#4FC3C7',accent2:'#FFB454',line:'#25506A',shadow:'rgba(0,0,0,.5)'}
+ ,candy:{n:'Bubblegum',bg:'#FFE9F3',surface:'#FFFFFF',ink:'#4B1E3F',muted:'#94597F',accent:'#FF4FA3',accent2:'#5BC8F5',line:'#FFCDE4',shadow:'rgba(75,30,63,.14)'},
+ lemon:{n:'Lemon',bg:'#FFFBE0',surface:'#FFFFFF',ink:'#3F3A12',muted:'#857C3A',accent:'#C77700',accent2:'#3AA6B9',line:'#F3E7A3',shadow:'rgba(63,58,18,.14)'},
+ mint:{n:'Mint',bg:'#E4FAF1',surface:'#FFFFFF',ink:'#123D33',muted:'#4F8577',accent:'#12A37F',accent2:'#F28AB2',line:'#BDEBDA',shadow:'rgba(18,61,51,.14)'},
+ galaxy:{n:'Galaxy',d:1,bg:'#120F2B',surface:'#1E1A44',ink:'#EDE9FF',muted:'#A9A2D6',accent:'#B28DFF',accent2:'#5EEAD4',line:'#342D6B',shadow:'rgba(0,0,0,.55)'},
+ cocoa:{n:'Cocoa',d:1,bg:'#2A1E1A',surface:'#3A2A24',ink:'#FFEBDD',muted:'#CBA995',accent:'#FFB26B',accent2:'#8ED1B5',line:'#55403A',shadow:'rgba(0,0,0,.5)'}
+};
+const FONTS={
+ fredoka:{n:'Fredoka (playful)',s:"'Fredoka'",q:null},
+ nunito:{n:'Nunito (soft)',s:"'Nunito'",q:'Nunito:wght@400;600;700'},
+ baloo:{n:'Baloo 2 (bubbly)',s:"'Baloo 2'",q:'Baloo+2:wght@400;600;700'},
+ comic:{n:'Comic Neue (casual)',s:"'Comic Neue'",q:'Comic+Neue:wght@400;700'},
+ lexend:{n:'Lexend (easy to read)',s:"'Lexend'",q:'Lexend:wght@400;600;700'},
+ system:{n:'System (plain)',s:'system-ui',q:null}
+};
+const SIZES=[['Small',0.9],['Normal',1],['Large',1.15],['Extra large',1.3]];
+const KEYWORDS=[[/abc|letter|alphabet|word|spell/i,'🔤'],[/num|count|math|1234/i,'🔢'],[/color|colour|paint|draw/i,'🎨'],[/shape/i,'🔷'],[/farm|cow|barn/i,'🐄'],[/animal|zoo|pet|dog|cat/i,'🐶'],[/music|piano|song|sound/i,'🎵'],[/match|memory|pair/i,'🧠'],[/puzzle/i,'🧩'],[/space|rocket|planet/i,'🚀'],[/car|truck|vehicle|train/i,'🚗'],[/ball|balloon|pop|bubble/i,'🎈'],[/fish|ocean|sea/i,'🐠'],[/dino/i,'🦖'],[/bug|insect|bee/i,'🐝'],[/food|fruit|veg/i,'🍎']];
+const EMOJI=['🦄','🧸','🌈','⭐','🐥','🎲','🪁','🍓','🐢','🎯','🛝','🪀'];
+const HOSTED='https://kungpowunicorn.github.io/map/';
+const OFF='mph-v1';
+const TAGLINE='';
+const $=id=>document.getElementById(id);
+const store={get(k,d){try{return localStorage.getItem(k)??d}catch{return d}},set(k,v){try{localStorage.setItem(k,v)}catch{}},del(k){try{localStorage.removeItem(k)}catch{}}};
+const S={metas:[],list:[],q:'',sort:store.get('sort','az'),favOnly:false,cur:null,truncated:false,favs:new Set()};
+try{S.favs=new Set(JSON.parse(store.get('favs','[]')))}catch{}
+
+/* ---------- default icons ---------- */
+function hash(s){let h=0;for(const c of s)h=(h*31+c.charCodeAt(0))>>>0;return h}
+function defaultIcon(path){
+  const hit=KEYWORDS.find(([re])=>re.test(path));
+  const h=hash(path),e=hit?hit[1]:EMOJI[h%EMOJI.length];
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="24" fill="hsl(${h%360},85%,86%)"/><text x="50" y="69" font-size="56" text-anchor="middle">${e}</text></svg>`;
+  return 'data:image/svg+xml,'+encodeURIComponent(svg);
+}
+
+/* ---------- settings ---------- */
+let audioCtx=null;
+function blip(f=660){
+  if(!$('sound').checked)return;
+  try{audioCtx=audioCtx||new(window.AudioContext||window.webkitAudioContext)();
+    const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=f;
+    g.gain.setValueAtTime(.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+.12);
+    o.connect(g).connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+.12)}catch{}
+}
+function applyFont(id){
+  const f=FONTS[id]||FONTS.fredoka;
+  if(f.q&&!document.getElementById('font-'+id)){
+    const l=document.createElement('link');l.id='font-'+id;l.rel='stylesheet';
+    l.href='https://fonts.googleapis.com/css2?family='+f.q+'&display=swap';document.head.append(l);
+  }
+  document.documentElement.style.setProperty('--font',f.s+",'Trebuchet MS','Segoe UI',sans-serif");
+  store.set('font',id);
+}
+function applyTheme(id){
+  const t=THEMES[id]||THEMES.sunny;
+  for(const k in t)if(k!=='n'&&k!=='d')document.documentElement.style.setProperty('--'+k,t[k]);
+  document.documentElement.style.colorScheme=t.d?'dark':'light';
+  store.set('theme',id);
+  document.querySelectorAll('.sw').forEach(b=>b.setAttribute('aria-pressed',b.dataset.id===id));
+}
+const toggleMenu=o=>{$('settingsMenu').hidden=!o;$('settingsBtn').setAttribute('aria-expanded',o)};
+function setHdr(off){toggleMenu(false);document.body.classList.toggle('hdr-off',off)}
+function initSettings(){
+  for(const[id,t]of Object.entries(THEMES)){
+    const b=document.createElement('button');b.className='sw';b.dataset.id=id;b.title=t.n;b.setAttribute('aria-label',t.n+' theme');
+    b.style.background=`linear-gradient(135deg,${t.bg} 50%,${t.accent} 50%)`;
+    b.onclick=()=>{applyTheme(id);blip(520)};$('swatches').append(b);
+  }
+  applyTheme(store.get('theme',matchMedia('(prefers-color-scheme: dark)').matches?'midnight':'sunny'));
+  const d=store.get('density','cozy');$('density').value=d;document.body.dataset.density=d;
+  $('density').onchange=e=>{document.body.dataset.density=e.target.value;store.set('density',e.target.value);blip(600)};
+  for(const[id,f]of Object.entries(FONTS))$('font').add(new Option(f.n,id));
+  const fid=FONTS[store.get('font','fredoka')]?store.get('font','fredoka'):'fredoka';
+  $('font').value=fid;applyFont(fid);
+  $('font').onchange=e=>{applyFont(e.target.value);blip(600)};
+  for(const[n,v]of SIZES)$('fsize').add(new Option(n,v));
+  $('fsize').value=SIZES.some(x=>String(x[1])===store.get('fsize','1'))?store.get('fsize','1'):'1';
+  document.documentElement.style.fontSize=(16*Number($('fsize').value))+'px';
+  $('fsize').onchange=e=>{document.documentElement.style.fontSize=(16*Number(e.target.value))+'px';store.set('fsize',e.target.value);blip(600)};
+  $('sound').checked=store.get('sound','on')==='on';
+  $('sound').onchange=e=>{store.set('sound',e.target.checked?'on':'off');syncMute();blip(780)};
+  $('embed').checked=store.get('embed','on')==='on';
+  $('embed').onchange=e=>store.set('embed',e.target.checked?'on':'off');
+  $('autohide').checked=store.get('autohide','off')==='on';
+  $('autohide').onchange=e=>store.set('autohide',e.target.checked?'on':'off');
+  $('settingsBtn').onclick=e=>{e.stopPropagation();toggleMenu($('settingsMenu').hidden)};
+  document.addEventListener('pointerdown',e=>{if(!$('settingsMenu').contains(e.target)&&!$('settingsBtn').contains(e.target))toggleMenu(false)});
+  window.addEventListener('blur',()=>{if(document.activeElement===$('frame'))toggleMenu(false)});
+  $('aboutBtn').onclick=()=>{blip(700);$('aboutDialog').showModal()};
+  $('aboutClose').onclick=()=>$('aboutDialog').close();
+  $('aboutDialog').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.close()});
+}
+
+/* ---------- discovery ---------- */
+const isLocal=/^(localhost|127\.|\[::1\]|0\.0\.0\.0|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|.+\.local$)/i.test(location.hostname);
+const encPath=p=>p.split('/').map(encodeURIComponent).join('/');
+const skipSeg=s=>s.startsWith('.')||s==='node_modules';
+const isHtml=p=>/\.html?$/i.test(p);
+function skipReason(p){
+  if(p.toLowerCase()==='index.html')return 'root dashboard page';
+  if(p.split('/').some(skipSeg))return 'inside a hidden or node_modules folder';
+  return '';
+}
+const wanted=p=>isHtml(p)&&!skipReason(p);
+
+async function listLocal(dir='',depth=0){
+  if(depth===0){
+    try{ /* preferred: serve.py exposes every .html file */
+      const r=await fetch('__games.json',{cache:'no-store'});
+      if(r.ok){const j=await r.json();if(Array.isArray(j)){
+        const out=[];
+        for(const p of j){if(!isHtml(p))continue;if(wanted(p))out.push(p);else S.skipped.push([p,skipReason(p)])}
+        return out;
+      }}
+    }catch{}
+  }
+  const base=new URL('./'+encPath(dir),location.href),root=new URL('./',location.href).pathname;
+  const res=await fetch(base,{cache:'no-store'});
+  if(!res.ok)throw new Error('Directory listing failed ('+res.status+')');
+  const doc=new DOMParser().parseFromString(await res.text(),'text/html');
+  if(depth===0&&doc.getElementById('grid'))
+    throw new Error("this server returns index.html instead of listing the folder, so local files can't be discovered. Start it with: python serve.py");
+  const out=[],subs=[];
+  for(const a of doc.querySelectorAll('a[href]')){
+    let u;try{u=new URL(a.getAttribute('href'),base)}catch{continue}
+    if(u.origin!==location.origin||!u.pathname.startsWith(root))continue;
+    const rel=decodeURIComponent(u.pathname.slice(root.length));
+    if(!rel.startsWith(dir)||rel===dir)continue;
+    if(rel.endsWith('/')){if(!skipSeg(rel.slice(dir.length,-1))&&depth<5)subs.push(rel)}
+    else if(isHtml(rel)){if(wanted(rel)){if(!out.includes(rel))out.push(rel)}else S.skipped.push([rel,skipReason(rel)])}
+  }
+  if(dir){ /* servers show a folder's index.html instead of a listing */
+    const ip=dir+'index.html';
+    if(!out.includes(ip))try{const r=await fetch(new URL('./'+encPath(ip),location.href),{method:'HEAD'});if(r.ok)out.push(ip)}catch{}
+  }
+  const nested=await Promise.all(subs.map(d=>listLocal(d,depth+1).catch(()=>[])));
+  return out.concat(...nested);
+}
+async function listGitHub(){
+  const res=await fetch(`https://api.github.com/repos/${REPO}/git/trees/main?recursive=1`);
+  if(!res.ok)throw new Error('GitHub API returned '+res.status+(res.status===403?' (rate limit)':''));
+  const data=await res.json();S.truncated=!!data.truncated;
+  S.allFiles=data.tree.filter(n=>n.type==='blob'&&!n.path.split('/').some(g=>g.startsWith('.')||g==='node_modules')&&!/^(README\.md|LICENSE|serve\.py|sw\.js)$/i.test(n.path)).map(n=>({path:n.path,sha:n.sha}));
+  const all=data.tree.filter(n=>n.type==='blob'&&isHtml(n.path)).map(n=>n.path);
+  S.skipped=all.filter(skipReason).map(p=>[p,skipReason(p)]);
+  return all.filter(p=>!skipReason(p));
+}
+async function pool(items,fn,n=8){
+  const out=new Array(items.length);let i=0;
+  await Promise.all(Array.from({length:Math.min(n,items.length)},async()=>{while(i<items.length){const k=i++;out[k]=await fn(items[k])}}));
+  return out;
+}
+function parseMeta(path,text,url){
+  const base=path.split('/').pop();
+  const m={path,folder:path.includes('/')?path.slice(0,path.lastIndexOf('/')):'',title:base.replace(/\.html?$/i,''),icon:null};
+  try{
+    if(!text)return m;
+    const doc=new DOMParser().parseFromString(text,'text/html');
+    const t=doc.querySelector('title')?.textContent.trim();if(t)m.title=t.replace(/\.html?$/i,'').trim()||m.title;
+    const href=doc.querySelector('link[rel~="icon"], link[rel="shortcut icon"]')?.getAttribute('href');
+    if(href)m.icon=/^data:/i.test(href)?href:new URL(href,url).href;
+  }catch{}
+  return m;
+}
+async function getMeta(path){
+  const url=new URL(encPath(path),location.href);
+  try{const res=await fetch(url);if(res.ok)return parseMeta(path,await res.text(),url)}catch{}
+  return parseMeta(path,'',url);
+}
+
+/* ---------- no-server mode (opened as file://) ---------- */
+const isFile=location.protocol==='file:';
+const FILE_KEY='mph_files_v1';
+function readFiles(){
+  try{const c=JSON.parse(store.get(FILE_KEY,'null'));if(c&&Array.isArray(c.metas)&&c.metas.length){S.scanned=c.t;return c.metas}}catch{}
+  return null;
+}
+async function scanPicked(files){
+  const items=files.map(f=>({f,path:(f.webkitRelativePath||'').split('/').slice(1).join('/')})).filter(x=>x.path);
+  if(!items.some(x=>x.path==='index.html'))throw new Error('that folder has no index.html at its top level. Pick the folder this dashboard lives in.');
+  const html=items.filter(x=>isHtml(x.path));
+  S.skipped=html.filter(x=>skipReason(x.path)).map(x=>[x.path,skipReason(x.path)]);
+  return pool(html.filter(x=>!skipReason(x.path)),async x=>parseMeta(x.path,await x.f.text(),new URL(encPath(x.path),location.href)));
+}
+function showPicker(msg,noPick){
+  $('tagline').textContent=noPick?TAGLINE:'Pick your games folder';
+  $('grid').querySelectorAll(':scope > :not(#viewer):not(#lockScreen)').forEach(n=>n.remove());
+  const box=document.createElement('div');box.className='state';
+  const p=document.createElement('p');
+  p.textContent=msg||"Browsers can't list a folder on their own. Choose the folder that holds this index.html once, and the Playhouse will remember what it finds.";
+  box.append(p);
+  if(!noPick){const b=document.createElement('button');b.className='btn';b.textContent='Choose games folder';b.onclick=()=>$('picker').click();box.append(b)}
+  const a=document.createElement('a');a.href=HOSTED;a.textContent='Open the online version (it works offline after one visit)';
+  a.style.cssText='display:block;margin-top:16px;color:var(--accent2);font-weight:600';
+  box.append(a);$('viewer').before(box);
+}
+function initPicker(){
+  $('picker').onchange=async e=>{
+    const files=[...e.target.files];e.target.value='';
+    if(!files.length)return;
+    $('tagline').textContent='Reading games…';
+    try{
+      S.metas=await scanPicked(files);
+      store.set(FILE_KEY,JSON.stringify({t:Date.now(),metas:S.metas}));
+      render();route();
+      $('count').title=`${S.metas.length} games found, ${S.skipped.length} excluded`;
+    }catch(err){showPicker("Couldn't use that folder: "+err.message)}
+  };
+}
+
+/* ---------- rendering ---------- */
+function visible(){
+  const q=S.q.trim().toLowerCase();
+  const l=S.metas.filter(m=>(!S.favOnly||S.favs.has(m.path))&&(!q||(m.title+' '+m.path).toLowerCase().includes(q)));
+  const cmp=(a,b)=>(S.favs.has(b.path)-S.favs.has(a.path))||a.title.localeCompare(b.title,undefined,{numeric:true,sensitivity:'base'});
+  return l.sort(S.sort==='folder'?(a,b)=>a.folder.localeCompare(b.folder)||cmp(a,b):cmp);
+}
+function makeCard(m){
+  const w=document.createElement('div');w.className='cardwrap';
+  const a=document.createElement('a');a.className='card';a.href=encPath(m.path);a.dataset.path=m.path;
+  const top=document.createElement('div');top.className='top';
+  const img=document.createElement('img');img.alt='';img.loading='lazy';img.src=m.icon||defaultIcon(m.path);
+  img.onerror=()=>{img.onerror=null;img.src=defaultIcon(m.path)};
+  const h=document.createElement('h2');h.textContent=m.title;
+  top.append(img,h);a.append(top);a.title=m.path;
+  const s=document.createElement('button');s.className='star';s.textContent='★';s.dataset.path=m.path;
+  s.setAttribute('aria-pressed',S.favs.has(m.path));s.setAttribute('aria-label','Favorite '+m.title);
+  a.addEventListener('mouseenter',()=>blip(660));
+  w.append(a,s);return w;
+}
+function stateEl(t){const p=document.createElement('p');p.className='state';p.textContent=t;return p}
+function render(){
+  const grid=$('grid'),viewer=$('viewer');
+  grid.querySelectorAll(':scope > :not(#viewer):not(#lockScreen)').forEach(n=>n.remove());
+  S.list=visible();
+  if(!S.list.length)viewer.before(stateEl(S.metas.length?'Nothing matches. Clear the search or the favorites filter.':'No .html files found.'));
+  let last=null;
+  for(const m of S.list){
+    if(S.sort==='folder'&&m.folder!==last){const h=document.createElement('h3');h.className='group';h.textContent=m.folder||'Top level';viewer.before(h);last=m.folder}
+    viewer.before(makeCard(m));
+  }
+  $('count').textContent=S.metas.length+(S.truncated?' (may be incomplete)':'');
+  $('tagline').textContent=TAGLINE;
+}
+
+/* ---------- mute shim for embedded games (same-origin) ---------- */
+function shim(win){
+  try{
+    if(!win)return;
+    if(win.__mph)return win.__mph;
+    const st=win.__mph={muted:!$('sound').checked,gains:new Set(),media:new Set()};
+    const NP=win.AudioNode.prototype,oc=NP.connect,od=NP.disconnect;
+    NP.connect=function(d,...a){
+      if(d instanceof win.AudioDestinationNode){
+        const c=d.context;
+        if(!c.__mg){const g=c.createGain();oc.call(g,d);g.gain.value=st.muted?0:1;st.gains.add(g);c.__mg=g}
+        oc.call(this,c.__mg,...a);return d;
+      }
+      return oc.call(this,d,...a);
+    };
+    NP.disconnect=function(...a){
+      if(a[0] instanceof win.AudioDestinationNode&&a[0].context.__mg)a[0]=a[0].context.__mg;
+      return od.apply(this,a);
+    };
+    const M=win.HTMLMediaElement.prototype,play=M.play;
+    M.play=function(){st.media.add(this);if(st.muted&&!this.muted){this.__m=1;this.muted=true}return play.apply(this,arguments)};
+    const ss=win.speechSynthesis;
+    if(ss){const sp=ss.speak.bind(ss);ss.speak=u=>{if(!st.muted)sp(u)}}
+    st.set=m=>{
+      st.muted=m;
+      st.gains.forEach(g=>{g.gain.value=m?0:1});
+      win.document.querySelectorAll('audio,video').forEach(e=>st.media.add(e));
+      st.media.forEach(el=>{if(m){if(!el.muted){el.__m=1;el.muted=true}}else if(el.__m){el.muted=false;el.__m=0}});
+      if(m)try{win.speechSynthesis.cancel()}catch{}
+    };
+    return st;
+  }catch{}
+}
+function syncMute(){const st=shim($('frame').contentWindow);if(st)st.set(!$('sound').checked)}
+function mountFrame(src){
+  const f=document.createElement('iframe');f.id='frame';f.title='Game';f.allow='autoplay; fullscreen';
+  $('frame').replaceWith(f);
+  syncMute();
+  f.addEventListener('load',syncMute);
+  if(src)f.src=src;
+}
+
+/* ---------- embedded player (hash routed) ---------- */
+const go=p=>{location.hash=p?'#/'+encPath(p):''};
+function route(){
+  const p=!S.locked&&location.hash.startsWith('#/')?decodeURIComponent(location.hash.slice(2)):'';
+  const m=S.metas.find(x=>x.path===p);
+  if(m){
+    const entering=!S.cur;S.cur=p;$('vTitle').textContent=m.title;if(entering&&$('autohide').checked)setHdr(true);$('vNew').href=encPath(p);
+    if(S.shown!==p){mountFrame(encPath(p));S.shown=p}
+    $('viewer').hidden=false;document.body.classList.add('playing');document.title=m.title+' · Playhouse';
+  }else if(S.cur||!$('viewer').hidden){
+    S.cur=null;S.shown=null;mountFrame('');$('viewer').hidden=true;if($('autohide').checked)setHdr(false);
+    document.body.classList.remove('playing');document.title="Mika's Adorable Playhouse";
+  }
+}
+function step(d){
+  if(!S.list.length)return;
+  const i=S.list.findIndex(m=>m.path===S.cur);
+  go(S.list[(i+d+S.list.length)%S.list.length].path);blip(740);
+}
+
+/* ---------- offline copy (https only) ---------- */
+const canOffline=location.protocol==='https:'&&'serviceWorker' in navigator&&'caches' in window;
+const SAVED_KEY='mph_saved_v1';
+const getSaved=()=>{try{return JSON.parse(store.get(SAVED_KEY,'{}'))}catch{return {}}};
+const offStatus=t=>{$('offStatus').textContent=t};
+function showSavedStatus(){const n=Object.keys(getSaved()).length;offStatus(n?`Ready · ${n} files`:'Not saved yet')}
+async function syncOffline(){
+  if(!canOffline||!S.allFiles?.length||navigator.connection?.saveData)return;
+  try{
+    const cache=await caches.open(OFF),saved=getSaved();
+    const need=S.allFiles.filter(f=>saved[f.path]!==f.sha);
+    if(!need.length){showSavedStatus();return}
+    let done=0,failed=0;offStatus(`Saving 0/${need.length}`);
+    await pool(need,async f=>{
+      const u=new URL(encPath(f.path),location.href).href;
+      try{const r=await fetch(u,{cache:'reload'});if(!r.ok)throw 0;await cache.put(u,r);saved[f.path]=f.sha}catch{failed++}
+      offStatus(`Saving ${++done}/${need.length}`);
+    },6);
+    store.set(SAVED_KEY,JSON.stringify(saved));
+    failed?offStatus(`Saved · ${failed} missing, press ↻ to retry`):showSavedStatus();
+  }catch{offStatus('Could not save offline')}
+}
+function initPWA(){
+  $('offRow').hidden=!canOffline;
+  if(canOffline)navigator.serviceWorker.register('sw.js').catch(()=>{});
+  let deferred=null;
+  window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferred=e;$('installBtn').hidden=false});
+  window.addEventListener('appinstalled',()=>{$('installBtn').hidden=true});
+  $('installBtn').onclick=async()=>{if(!deferred)return;deferred.prompt();await deferred.userChoice.catch(()=>{});deferred=null;$('installBtn').hidden=true};
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone;
+  $('iosNote').hidden=!(canOffline&&ios&&!standalone);
+}
+
+/* ---------- timer + parental lock ---------- */
+const TKEY='mph_timer',LKEY='mph_locked',T={end:0};
+const fmt=ms=>{const t=Math.max(0,Math.ceil(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),sec=t%60;
+  return (h?h+':':'')+String(m).padStart(h?2:1,'0')+':'+String(sec).padStart(2,'0')};
+function askMath(box,label,onOk,onCancel,note){
+  const a=6+Math.floor(Math.random()*4),b=6+Math.floor(Math.random()*4),c=11+Math.floor(Math.random()*19),ans=a*b+c;
+  box.replaceChildren();
+  const q=document.createElement('p');q.textContent=`Parents: what is ${a} × ${b} + ${c}?`;
+  const i=document.createElement('input');i.type='number';i.className='mathin';i.inputMode='numeric';i.setAttribute('aria-label','Answer');
+  const m=document.createElement('p');m.className='note';m.textContent=note||'';
+  const row=document.createElement('div');row.className='dlgbtns';
+  const ok=document.createElement('button');ok.className='btn';ok.textContent=label;
+  const no=document.createElement('button');no.className='btn';no.textContent='Cancel';
+  const check=()=>{if(i.value!==''&&Number(i.value)===ans)onOk();else askMath(box,label,onOk,onCancel,'Not quite. Here is a new one.')};
+  ok.onclick=check;no.onclick=onCancel;i.onkeydown=e=>{if(e.key==='Enter')check()};
+  row.append(ok,no);box.append(q,i,m,row);i.focus();
+}
+function renderTimerUI(){
+  const on=T.end>Date.now();
+  $('tSet').hidden=on;$('tRun').hidden=!on;
+  if(!on)document.querySelectorAll('.tchip').forEach(c=>{c.hidden=true});
+}
+function tickTimer(){
+  if(!T.end)return;
+  const left=T.end-Date.now();
+  if(left<=0){expire();return}
+  document.querySelectorAll('.tchip').forEach(c=>{c.textContent='⏳ '+fmt(left);c.hidden=false});
+  $('tLeft').textContent=fmt(left);
+}
+function clearTimer(){T.end=0;store.del(TKEY);renderTimerUI()}
+function expire(){clearTimer();store.set(LKEY,'1');lock()}
+function lock(){
+  S.locked=true;document.body.classList.add('locked');$('lockScreen').hidden=false;
+  $('mathBox').replaceChildren();$('lockBtn').hidden=false;
+  toggleMenu(false);document.querySelectorAll('dialog').forEach(d=>{if(d.open)d.close()});
+  try{if(document.fullscreenElement)document.exitFullscreen().catch(()=>{})}catch{}
+  if(location.hash)location.hash='';
+  route();
+}
+function unlock(){
+  S.locked=false;store.del(LKEY);document.body.classList.remove('locked');
+  $('lockScreen').hidden=true;$('mathBox').replaceChildren();route();
+}
+function initTimer(){
+  T.end=Number(store.get(TKEY,'0'))||0;
+  $('timerBtn').onclick=()=>{toggleMenu(false);$('tStopBox').replaceChildren();renderTimerUI();tickTimer();$('timerDialog').showModal()};
+  document.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{const t=Number(b.dataset.s);$('tH').value=Math.floor(t/3600);$('tM').value=Math.floor(t%3600/60);$('tS').value=t%60});
+  $('tStart').onclick=()=>{
+    const sec=(Number($('tH').value)||0)*3600+(Number($('tM').value)||0)*60+(Number($('tS').value)||0);
+    if(sec<1){$('tErr').textContent='Set a time greater than zero.';return}
+    if(sec>86400){$('tErr').textContent='The longest timer is 24 hours.';return}
+    $('tErr').textContent='';T.end=Date.now()+sec*1000;store.set(TKEY,String(T.end));
+    renderTimerUI();tickTimer();$('timerDialog').close();
+  };
+  $('tStop').onclick=()=>askMath($('tStopBox'),'Stop timer',()=>{$('tStopBox').replaceChildren();clearTimer()},()=>$('tStopBox').replaceChildren());
+  document.querySelectorAll('.tclose').forEach(b=>{b.onclick=()=>$('timerDialog').close()});
+  $('timerDialog').addEventListener('click',e=>{if(e.target===e.currentTarget)e.currentTarget.close()});
+  $('lockBtn').onclick=()=>{$('lockBtn').hidden=true;askMath($('mathBox'),'Unlock',unlock,()=>{$('mathBox').replaceChildren();$('lockBtn').hidden=false})};
+  setInterval(tickTimer,1000);
+  document.addEventListener('visibilitychange',tickTimer);window.addEventListener('pageshow',tickTimer);
+  window.addEventListener('storage',e=>{
+    if(e.key===LKEY){e.newValue?lock():unlock()}
+    if(e.key===TKEY){T.end=Number(e.newValue)||0;renderTimerUI();tickTimer()}
+  });
+  if(store.get(LKEY,'')==='1')lock();
+  renderTimerUI();tickTimer();
+}
+
+/* ---------- lifecycle ---------- */
+function readCache(any){
+  try{const c=JSON.parse(store.get(CACHE_KEY,'null'));if(c&&(any||Date.now()-c.t<TTL)){S.truncated=c.tr;return c.metas}}catch{}
+  return null;
+}
+async function initDashboard(force=false){
+  $('tagline').textContent='Looking for games…';
+  try{
+    if(!/^(https?|file):$/.test(location.protocol)){showPicker("This copy was opened in a way that hides its game files, so the games can't be found.",true);return}
+    if(isFile){
+      const c=force?null:readFiles();
+      if(c){S.metas=c;render();route();if(S.scanned)$('count').title='Last scanned '+new Date(S.scanned).toLocaleString();return}
+      showPicker();return;
+    }
+    S.skipped=[];let metas=!force&&!isLocal?readCache(!navigator.onLine):null;const cached=!!metas;
+    if(!metas){
+      try{
+        const files=await(isLocal?listLocal():listGitHub());
+        metas=await pool(files,getMeta);
+        if(!isLocal)store.set(CACHE_KEY,JSON.stringify({t:Date.now(),tr:S.truncated,metas}));
+      }catch(err){
+        metas=isLocal?null:readCache(true);
+        if(!metas)throw err;
+      }
+    }
+    S.metas=metas;render();route();
+    if(canOffline){showSavedStatus();syncOffline()}
+    console.groupCollapsed(`[Playhouse] ${metas.length} games found, ${S.skipped.length} excluded (${cached?'from cache':isLocal?'local directory listing':'GitHub API'})`);
+    console.table(metas.map(m=>({path:m.path,title:m.title})));
+    if(S.skipped.length)console.table(S.skipped.map(([path,why])=>({path,why})));
+    console.groupEnd();
+    $('count').title=`${metas.length} games found, ${S.skipped.length} excluded`;
+  }catch(err){
+    $('tagline').textContent='Could not load games';
+    $('grid').querySelectorAll(':scope > :not(#viewer):not(#lockScreen)').forEach(n=>n.remove());
+    $('viewer').before(stateEl('Discovery failed: '+err.message+'. Use ↻ to retry.'));
+  }
+}
+function initUI(){
+  $('sort').value=S.sort;
+  $('sort').onchange=e=>{S.sort=e.target.value;store.set('sort',S.sort);render();blip(600)};
+  $('search').oninput=e=>{S.q=e.target.value;render()};
+  $('favOnly').onclick=e=>{S.favOnly=!S.favOnly;e.currentTarget.setAttribute('aria-pressed',S.favOnly);render();blip(600)};
+  $('random').onclick=()=>{if(S.list.length){go(S.list[Math.floor(Math.random()*S.list.length)].path);blip(880)}};
+  $('refresh').onclick=()=>{if(isFile){$('picker').click();return}store.del(CACHE_KEY);initDashboard(true)};
+  $('grid').addEventListener('click',e=>{
+    const star=e.target.closest('.star');
+    if(star){const p=star.dataset.path;S.favs.has(p)?S.favs.delete(p):S.favs.add(p);store.set('favs',JSON.stringify([...S.favs]));blip(820);render();return}
+    const card=e.target.closest('a.card');
+    if(card&&$('embed').checked&&!(e.metaKey||e.ctrlKey||e.shiftKey||e.altKey||e.button)){e.preventDefault();blip(880);go(card.dataset.path)}
+  });
+  $('vBack').onclick=()=>go('');
+  $('hideBtn').onclick=()=>setHdr(true);$('revealTab').onclick=()=>setHdr(false);
+  $('vPrev').onclick=()=>step(-1);$('vNext').onclick=()=>step(1);
+  $('vFull').onclick=()=>$('frame').requestFullscreen?.();
+  $('vReload').onclick=()=>{if(S.cur)mountFrame(encPath(S.cur))};
+  window.addEventListener('hashchange',route);
+  document.addEventListener('keydown',e=>{
+    if(S.locked)return;
+    if(e.key==='Escape'){if(!$('settingsMenu').hidden)toggleMenu(false);else if(S.cur)go('');return}
+    if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)||$('aboutDialog').open)return;
+    if(e.key==='/'){e.preventDefault();$('search').focus()}
+    else if(e.key==='h'||e.key==='H')setHdr(!document.body.classList.contains('hdr-off'));
+    else if(S.cur&&e.key==='ArrowRight')step(1);
+    else if(S.cur&&e.key==='ArrowLeft')step(-1);
+  });
+}
+document.addEventListener('DOMContentLoaded',()=>{initSettings();initUI();initPicker();initPWA();initTimer();initDashboard()});
+</script>
+</body>
+</html>

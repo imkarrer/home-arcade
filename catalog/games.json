@@ -1,8 +1,47 @@
 {
+  "shelves": [
+    { "id": "little", "title": "Little kids" },
+    { "id": "learning", "title": "Learning" },
+    { "id": "racing", "title": "Racing" },
+    { "id": "classics", "title": "Classics" },
+    { "id": "build", "title": "Build and conquer" }
+  ],
   "games": [
+    {
+      "id": "mikas_playhouse",
+      "title": "Mika's Playhouse",
+      "kind": "web",
+      "shelf": "little",
+      "icon": "🦄",
+      "modes": ["solo"],
+      "page": "www/games/mikas_playhouse/index.html",
+      "source": "https://github.com/KungPowUnicorn/map/tree/dc0e31a15ab74126b2b6243ad2b9d820ef763f53"
+    },
+    {
+      "id": "sofi_games",
+      "title": "Sofi's Games",
+      "kind": "web",
+      "shelf": "little",
+      "icon": "🧸",
+      "modes": ["solo"],
+      "page": "www/games/sofi_games/index.html",
+      "source": "https://github.com/RazHadas/sofi-games/tree/c39f3f54e69d76b00036080b2723165609cc7525"
+    },
+    {
+      "id": "toddler_games",
+      "title": "Balloons and Letters",
+      "kind": "web",
+      "shelf": "little",
+      "icon": "🎈",
+      "modes": ["solo"],
+      "url": "https://arun-ks.github.io/ToddlerGames/",
+      "source": "https://github.com/arun-ks/ToddlerGames"
+    },
     {
       "id": "mario_kart_64",
       "title": "Mario Kart 64",
+      "shelf": "racing",
+      "icon": "🏎️",
       "core": "mupen64plus_next_libretro.dll",
       "rom": "roms/n64/mario_kart_64.z64",
       "rom_alts": [
@@ -14,6 +53,8 @@
     {
       "id": "goldeneye_007",
       "title": "GoldenEye 007",
+      "shelf": "classics",
+      "icon": "🕵️",
       "core": "mupen64plus_next_libretro.dll",
       "rom": "roms/n64/goldeneye_007.z64",
       "rom_alts": [
@@ -25,6 +66,8 @@
     {
       "id": "super_mario_kart",
       "title": "Super Mario Kart",
+      "shelf": "racing",
+      "icon": "🏁",
       "core": "snes9x_libretro.dll",
       "rom": "roms/snes/super_mario_kart.sfc",
       "rom_alts": [
@@ -35,6 +78,8 @@
     {
       "id": "ss_treasure_mountain",
       "title": "Super Solvers: Treasure Mountain!",
+      "shelf": "learning",
+      "icon": "⛰️",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "SST.EXE",
@@ -46,6 +91,8 @@
     {
       "id": "ss_midnight_rescue",
       "title": "Super Solvers: Midnight Rescue!",
+      "shelf": "learning",
+      "icon": "🌙",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "SSR.EXE",
@@ -57,6 +104,8 @@
     {
       "id": "ss_outnumbered",
       "title": "Super Solvers: OutNumbered!",
+      "shelf": "learning",
+      "icon": "🔢",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "SSO.EXE",
@@ -68,6 +117,8 @@
     {
       "id": "ss_gizmos_gadgets",
       "title": "Super Solvers: Gizmos and Gadgets!",
+      "shelf": "learning",
+      "icon": "⚙️",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "ssg.bat",
@@ -79,6 +130,8 @@
     {
       "id": "ss_spellbound",
       "title": "Super Solvers: Spellbound!",
+      "shelf": "learning",
+      "icon": "📖",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "ssbprog.exe",
@@ -87,6 +140,8 @@
     {
       "id": "ss_treasure_mathstorm",
       "title": "Super Solvers: Treasure MathStorm!",
+      "shelf": "learning",
+      "icon": "❄️",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "tmprog.exe",
@@ -98,6 +153,8 @@
     {
       "id": "ss_ancient_empires",
       "title": "Super Solvers: Ancient Empires",
+      "shelf": "learning",
+      "icon": "🏛️",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "AEPROG.EXE",
@@ -106,6 +163,8 @@
     {
       "id": "ss_operation_neptune",
       "title": "Super Solvers: Operation Neptune",
+      "shelf": "learning",
+      "icon": "🌊",
       "core": "dosbox_pure_libretro.dll",
       "modes": ["solo"],
       "boot": "ON.EXE",
@@ -114,6 +173,8 @@
     {
       "id": "freeciv",
       "title": "Freeciv",
+      "shelf": "build",
+      "icon": "🗺️",
       "kind": "native",
       "modes": ["solo", "host", "join", "family"],
       "exe": "apps/windows/freeciv/freeciv-gtk3.22.exe",
@@ -141,6 +202,8 @@
     {
       "id": "mindustry",
       "title": "Mindustry",
+      "shelf": "build",
+      "icon": "🏭",
       "kind": "native",
       "modes": ["solo", "family"],
       "exe": "apps/windows/jre/bin/java.exe",

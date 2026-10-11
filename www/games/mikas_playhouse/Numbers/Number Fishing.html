@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Number Fishing</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%9F%3C/text%3E%3C/svg%3E">
+<style>
+:root{--deep:#06283d;--mid:#0b4f6c;--foam:#e8f6f3;--sun:#ffc857;--coral:#ff6b5a;--teal:#2ec4b6;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:dark}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{height:100%;margin:0;overflow:hidden;overscroll-behavior:none;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+body{background:linear-gradient(#0b4f6c,#06283d 70%,#041c2b);color:var(--foam);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;display:flex;flex-direction:column;user-select:none;-webkit-user-select:none}
+header{display:flex;align-items:center;gap:12px;padding:8px 12px}
+h1{font-size:1.2rem;margin:0;letter-spacing:.02em;flex:0 0 auto}
+.gauge{flex:1;position:relative;height:26px;border-radius:13px;background:#031521;border:2px solid #1d6f8f;overflow:hidden;min-width:60px}
+.fill{height:100%;width:1%;background:linear-gradient(90deg,var(--teal),var(--sun));transition:width .35s ease,background .3s}
+.fill.low{background:var(--coral)}
+.gauge span{position:absolute;inset:0;display:grid;place-items:center;font-size:.8rem;font-weight:700;text-shadow:0 1px 2px #000}
+button{font:inherit;color:inherit;cursor:pointer}
+.gear{width:44px;height:44px;border-radius:50%;border:2px solid #1d6f8f;background:#0a3a54;font-size:1.4rem;line-height:1;flex:0 0 auto}
+.gear:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:3px solid var(--sun);outline-offset:2px}
+.prompt{text-align:center;padding:2px 12px 6px}
+.chip{display:inline-flex;align-items:center;gap:12px;background:#0a3a54;border:2px solid var(--sun);border-radius:40px;padding:4px 22px;cursor:pointer}
+.chip small{font-size:1rem;opacity:.85}
+.chip b{font-size:2.6rem;line-height:1.1;color:var(--sun);min-width:1.2ch}
+#stage{flex:1;position:relative;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center;padding:24px;background:rgba(3,21,33,.82);z-index:5}
+.ov.hide{display:none}
+.ov h2{font-size:2rem;margin:0}.ov p{margin:0;max-width:30ch;line-height:1.4;opacity:.9}
+.btn{background:var(--sun);color:#1b2a33;border:0;border-radius:30px;padding:12px 32px;font-weight:700;font-size:1.1rem;min-height:48px}
+.btn.alt{background:#0a3a54;color:var(--foam);border:2px solid #1d6f8f}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:10;padding:12px}
+#modal.open{display:flex}
+.panel{background:#0a2f45;border:2px solid #1d6f8f;border-radius:18px;width:100%;max-width:420px;max-height:92%;overflow:auto;padding:16px}
+.panel h3{margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}
+.row{padding:8px 0;border-top:1px solid #174f6b}
+.row label{display:block;font-size:.9rem;margin-bottom:6px;opacity:.9}
+.seg{display:flex;gap:6px}
+.seg button{flex:1;min-height:42px;border-radius:10px;border:2px solid #1d6f8f;background:#06283d}
+.seg button.on{background:var(--teal);color:#06283d;border-color:var(--teal);font-weight:700}
+.tg{display:flex;justify-content:space-between;align-items:center;min-height:42px}
+.tg button{width:56px;height:32px;border-radius:16px;border:2px solid #1d6f8f;background:#06283d;position:relative}
+.tg button::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#7aa;transition:left .15s}
+.tg button.on{background:var(--teal)}.tg button.on::after{left:27px;background:#fff}
+.credit{margin-top:12px;text-align:center;font-size:.7rem;opacity:.55}
+.credit a{color:inherit}
+@media (max-height:520px){.chip b{font-size:1.8rem}h1{font-size:1rem}.prompt{padding:0 12px 4px}}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <h1>🐟 Number Fishing</h1>
+  <div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="1" id="gauge"><div class="fill" id="fill"></div><span id="gtxt">1 / 100</span></div>
+  <button class="gear" id="gear" aria-label="Settings">⚙️</button>
+</header>
+<div class="prompt"><div class="chip" id="chip" title="Tap to hear again"><small>Catch the fish with</small><b id="target">?</b></div></div>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div class="ov" id="ov"><h2 id="ovt">Number Fishing</h2><p id="ovp">Tap the fish carrying the number you're asked for. Fill the gauge to 100 to win.</p><button class="btn" id="go">Play</button></div>
+</div>
+<div id="modal" aria-hidden="true">
+  <div class="panel" role="dialog" aria-label="Settings">
+    <h3>Settings <button class="btn alt" id="done" style="padding:6px 16px;min-height:38px;font-size:.95rem">Done</button></h3>
+    <div id="opts"></div>
+    <div class="row"><button class="btn alt" id="restart" style="width:100%">Restart game</button></div>
+    <div class="credit">Made With ❤️ By <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener">KungPowUnicorn</a></div>
+  </div>
+</div>
+<script>
+(function(){
+var $=function(s){return document.querySelector(s)};
+var DEF={gain:5,max:10,fish:8,speed:1,sfx:true,voice:true,color:true},S=Object.assign({},DEF);
+try{Object.assign(S,JSON.parse(localStorage.getItem('numfish-settings')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('numfish-settings',JSON.stringify(S))}catch(e){}}
+
+/* ---------- audio ---------- */
+var ac;
+function tone(f,d,type,at,vol){
+  if(!S.sfx)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    var o=ac.createOscillator(),g=ac.createGain(),t=ac.currentTime+(at||0);
+    o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vol||.15,t);g.gain.exponentialRampToValueAtTime(.001,t+d);
+    o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d)}catch(e){}
+}
+function speak(t){
+  try{if(!('speechSynthesis' in window))return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.rate=.95;speechSynthesis.speak(u)}catch(e){}
+}
+var sfx={
+  good:function(){[660,880,1100].forEach(function(f,i){tone(f,.18,'triangle',i*.07)})},
+  bad:function(){tone(180,.3,'sawtooth',0,.12)},
+  win:function(){[523,659,784,1047,1319].forEach(function(f,i){tone(f,.3,'triangle',i*.12)})},
+  lose:function(){[400,330,260,180].forEach(function(f,i){tone(f,.3,'sawtooth',i*.18,.1)})}
+};
+
+/* ---------- game state ---------- */
+var COLORS=[['Red','#ef4444'],['Orange','#f97316'],['Yellow','#facc15'],['Green','#22c55e'],['Blue','#3b82f6'],['Purple','#a855f7'],['Pink','#ec4899'],['Teal','#14b8a6'],['Brown','#a16207'],['Gray','#94a3b8']];
+var cv=$('#cv'),ctx=cv.getContext('2d'),W=0,H=0,fish=[],fx=[],score=1,target=0,state='idle',last=0,tt=0,flash=0;
+function rnd(a,b){return a+Math.random()*(b-a)}
+function shuffle(a){for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1)),t=a[i];a[i]=a[j];a[j]=t}return a}
+function modalOpen(){return $('#modal').classList.contains('open')}
+
+function resize(){
+  var r=$('#stage').getBoundingClientRect(),d=window.devicePixelRatio||1;
+  W=r.width;H=r.height;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);
+  if(fish.length)build();
+}
+function build(){
+  var n=Math.min(S.fish,S.max),s=Math.max(22,Math.min(38,Math.min(W,H)/(n>6?8.5:7))),lanes=[],i;
+  for(i=0;i<n;i++)lanes.push(H*(i+.5)/n);
+  shuffle(lanes);fish=[];
+  for(i=0;i<n;i++){var dir=Math.random()<.5?-1:1;
+    fish.push({x:rnd(0,W),y:lanes[i],s:s,vx:dir*rnd(.7,1.3)*55*S.speed,ph:rnd(0,6.28),num:0,ci:0})}
+  assign();
+}
+function assign(){
+  var pool=[],i,cs=shuffle(COLORS.map(function(_,k){return k}));
+  for(i=1;i<=S.max;i++)pool.push(i);shuffle(pool);
+  fish.forEach(function(f,k){f.num=pool[k];f.ci=cs[k%cs.length]});
+  target=pool[0];$('#target').textContent=target;
+}
+function newRound(){assign();if(S.voice)speak('Catch number '+target)}
+function setScore(v){
+  score=Math.max(0,Math.min(100,v));
+  $('#fill').style.width=Math.max(1,score)+'%';$('#fill').classList.toggle('low',score<=10);
+  $('#gtxt').textContent=score+' / 100';$('#gauge').setAttribute('aria-valuenow',score);
+}
+function start(){
+  state='play';setScore(1);fx=[];$('#ov').classList.add('hide');build();
+  if(S.voice)speak('Catch number '+target);
+}
+function end(win){
+  state=win?'won':'lost';
+  win?sfx.win():sfx.lose();
+  $('#ovt').textContent=win?'You win! 🏆':'Game over';
+  $('#ovp').textContent=win?'The gauge hit 100. Great fishing!':'The gauge ran out. Try again!';
+  $('#go').textContent='Play again';$('#ov').classList.remove('hide');
+  if(S.voice)speak(win?'You win!':'Game over');
+}
+
+/* ---------- input ---------- */
+cv.addEventListener('pointerdown',function(e){
+  if(state!=='play'||modalOpen())return;
+  var r=cv.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top,best=null,bd=9;
+  fish.forEach(function(f){var dx=(x-f.x)/(f.s*1.5),dy=(y-(f.y+Math.sin(tt*2+f.ph)*4))/(f.s*1.1),d=dx*dx+dy*dy;if(d<bd&&d<=1){bd=d;best=f}});
+  if(!best)return;
+  var c=COLORS[best.ci],by=best.y;
+  if(best.num===target){
+    sfx.good();fx.push({x:best.x,y:by,t:0,txt:'+'+S.gain,col:'#ffc857',pop:c[1],s:best.s});
+    setScore(score+S.gain);
+    if(score>=100){end(true);return}
+    if(S.color)speak(c[0]+' '+best.num);
+    setTimeout(function(){if(state==='play')newRound()},S.color?900:150);
+    best.num=-1;
+  }else{
+    sfx.bad();flash=.35;fx.push({x:best.x,y:by,t:0,txt:'-1',col:'#ff6b5a',s:best.s});
+    setScore(score-1);
+    if(score<=0){end(false);return}
+    if(S.color)speak(c[0]+' '+best.num);
+  }
+});
+$('#chip').addEventListener('click',function(){if(state==='play')speak('Catch number '+target)});
+$('#go').addEventListener('click',start);
+
+/* ---------- render ---------- */
+function drawFish(f,y){
+  var s=f.s,c=COLORS[f.ci][1];
+  ctx.save();ctx.translate(f.x,y);ctx.scale(f.vx>=0?1:-1,1);
+  ctx.fillStyle=c;ctx.strokeStyle='rgba(0,0,0,.45)';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(-s*.8,0);ctx.lineTo(-s*1.5,-s*.55);ctx.lineTo(-s*1.5,s*.55);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.ellipse(0,0,s,s*.72,0,0,6.283);ctx.fill();ctx.stroke();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(s*.62,-s*.2,s*.16,0,6.283);ctx.fill();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(s*.67,-s*.2,s*.08,0,6.283);ctx.fill();
+  ctx.restore();
+  ctx.font='bold '+Math.round(s*.85)+'px "Trebuchet MS",system-ui,sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.lineWidth=4;ctx.strokeStyle='rgba(0,0,0,.7)';ctx.fillStyle='#fff';
+  var tx=f.x-(f.vx>=0?s*.12:-s*.12);ctx.strokeText(f.num,tx,y+2);ctx.fillText(f.num,tx,y+2);
+}
+function frame(now){
+  var dt=Math.min(.05,(now-last)/1000||0);last=now;
+  if(!modalOpen()&&state==='play')tt+=dt;
+  if(!modalOpen()||state!=='play'){/* keep animating idle backdrop slowly */}
+  var run=!modalOpen();
+  ctx.clearRect(0,0,W,H);
+  var g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'rgba(46,196,182,.10)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  fish.forEach(function(f){
+    if(run){f.x+=f.vx*dt;var m=f.s*1.8;if(f.vx>0&&f.x>W+m)f.x=-m;else if(f.vx<0&&f.x<-m)f.x=W+m}
+    if(f.num>0)drawFish(f,f.y+Math.sin(tt*2+f.ph)*4);
+  });
+  for(var i=fx.length-1;i>=0;i--){
+    var e=fx[i];if(run)e.t+=dt;if(e.t>.9){fx.splice(i,1);continue}
+    var a=1-e.t/.9;ctx.globalAlpha=a;
+    if(e.pop){ctx.strokeStyle=e.pop;ctx.lineWidth=4;ctx.beginPath();ctx.arc(e.x,e.y,e.s*(1+e.t*2.5),0,6.283);ctx.stroke()}
+    ctx.fillStyle=e.col;ctx.font='bold 26px "Trebuchet MS",system-ui,sans-serif';ctx.textAlign='center';ctx.fillText(e.txt,e.x,e.y-e.s-e.t*50);
+    ctx.globalAlpha=1;
+  }
+  if(flash>0){ctx.fillStyle='rgba(255,70,60,'+flash+')';ctx.fillRect(0,0,W,H);if(run)flash=Math.max(0,flash-dt*1.2)}
+  requestAnimationFrame(frame);
+}
+
+/* ---------- settings ---------- */
+var OPTS=[
+ ['gain','Gauge points per correct catch',[1,5,10,20]],
+ ['max','Number range',[10,20,50,99],function(v){return '1–'+v}],
+ ['fish','Fish on screen',[4,6,8,10]],
+ ['speed','Swim speed',[.6,1,1.5],function(v){return {'0.6':'Slow','1':'Normal','1.5':'Fast'}[v]}]
+],TOG=[['sfx','Sound effects'],['voice','Speak the number to catch'],['color','Speak the fish color and number']];
+function buildSettings(){
+  var h='';
+  OPTS.forEach(function(o){h+='<div class="row"><label>'+o[1]+'</label><div class="seg" data-k="'+o[0]+'">';
+    o[2].forEach(function(v){h+='<button data-v="'+v+'" class="'+(S[o[0]]==v?'on':'')+'">'+(o[3]?o[3](v):v)+'</button>'});h+='</div></div>'});
+  TOG.forEach(function(t){h+='<div class="row tg"><span>'+t[1]+'</span><button data-t="'+t[0]+'" class="'+(S[t[0]]?'on':'')+'" role="switch" aria-checked="'+S[t[0]]+'" aria-label="'+t[1]+'"></button></div>'});
+  $('#opts').innerHTML=h;
+}
+$('#opts').addEventListener('click',function(e){
+  var b=e.target.closest('button');if(!b)return;
+  if(b.dataset.v!==undefined){var k=b.parentNode.dataset.k;S[k]=parseFloat(b.dataset.v);save();buildSettings();
+    if(k!=='gain'&&fish.length){S.fish=Math.min(S.fish,S.max);build();if(state==='play')newRound()}}
+  else if(b.dataset.t){S[b.dataset.t]=!S[b.dataset.t];save();buildSettings();
+    if(b.dataset.t==='voice'||b.dataset.t==='color'){if(!S.voice&&!S.color)try{speechSynthesis.cancel()}catch(x){}}}
+});
+function openM(){buildSettings();$('#modal').classList.add('open');$('#modal').setAttribute('aria-hidden','false')}
+function closeM(){$('#modal').classList.remove('open');$('#modal').setAttribute('aria-hidden','true')}
+$('#gear').addEventListener('click',openM);$('#done').addEventListener('click',closeM);
+$('#modal').addEventListener('click',function(e){if(e.target===this)closeM()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeM()});
+$('#restart').addEventListener('click',function(){closeM();start()});
+
+window.addEventListener('resize',resize);
+setScore(1);resize();build();requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

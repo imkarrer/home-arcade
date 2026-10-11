@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Draw the Number!</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23ffd23f'/><text x='50' y='72' font-size='64' font-weight='900' text-anchor='middle' fill='%23ff5e5b' font-family='Arial'>7</text></svg>">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff7e0;--card:#fff;--ink:#2b2d42;--mute:#6b6f85;--acc:#ff5e5b;--good:#2ec4b6;--gold:#ffd23f;--line:#e8dfc4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1d1f33;--card:#2a2d47;--ink:#f4f1e6;--mute:#a4a8c4;--line:#3c4066}}
+:root[data-theme="dark"]{--bg:#1d1f33;--card:#2a2d47;--ink:#f4f1e6;--mute:#a4a8c4;--line:#3c4066}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Comic Sans MS",system-ui,sans-serif;display:flex;flex-direction:column;overflow:hidden;user-select:none;-webkit-user-select:none}
+header{display:flex;align-items:center;gap:10px;padding:10px 14px 4px}
+h1{font-size:clamp(18px,5vw,26px);margin:0;flex:1}
+.ico{width:44px;height:44px;border-radius:50%;border:0;background:var(--card);color:var(--ink);font-size:22px;box-shadow:0 2px 0 var(--line);cursor:pointer}
+.gwrap{padding:4px 14px}
+.gauge{position:relative;height:30px;background:var(--card);border-radius:15px;overflow:hidden;border:3px solid var(--line)}
+.fill{height:100%;width:1%;background:linear-gradient(90deg,var(--good),var(--gold));border-radius:12px;transition:width .4s ease,background .3s}
+.fill.hit{background:var(--acc)}
+.glab{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px}
+.prompt{text-align:center;font-size:clamp(15px,4vw,20px);padding:4px;color:var(--mute);min-height:30px}
+#stage{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 12px}
+#box{position:relative;background:var(--card);border-radius:24px;border:3px solid var(--line);box-shadow:0 4px 0 var(--line);touch-action:none}
+canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:22px;touch-action:none}
+.bar{display:flex;gap:10px;justify-content:center;padding:10px 14px 14px}
+.btn{font:inherit;font-weight:700;font-size:16px;padding:12px 18px;border-radius:16px;border:0;background:var(--acc);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.2);cursor:pointer;min-height:46px}
+.btn.alt{background:var(--good)}
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:20px;z-index:5}
+.ov.on{display:flex}
+.panel{background:var(--card);border-radius:24px;padding:20px;width:100%;max-width:380px;max-height:90%;overflow:auto;text-align:center}
+.panel h2{margin:0 0 12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);text-align:left;font-weight:700}
+.seg{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.seg button{font:inherit;font-weight:700;border:2px solid var(--line);background:var(--bg);color:var(--ink);border-radius:12px;padding:8px 11px;min-width:40px;cursor:pointer}
+.seg button.on{background:var(--good);border-color:var(--good);color:#fff}
+.credit{margin-top:16px;font-size:11px;color:var(--mute)}
+.credit a{color:var(--mute)}
+.big{font-size:64px;margin:0}
+</style>
+</head>
+<body>
+<header>
+  <h1>✏️ Draw the Number!</h1>
+  <button class="ico" id="gear" aria-label="Settings">⚙️</button>
+</header>
+<div class="gwrap"><div class="gauge"><div class="fill" id="fill"></div><div class="glab" id="glab">1 / 100</div></div></div>
+<div class="prompt" id="prompt">&nbsp;</div>
+<div id="stage"><div id="box"><canvas id="cg"></canvas><canvas id="cd"></canvas></div></div>
+<div class="bar">
+  <button class="btn alt" id="hear">🔊 Hear</button>
+  <button class="btn" id="clear">🧽 Try again</button>
+  <button class="btn alt" id="skip">⏭ Skip</button>
+</div>
+
+<div class="ov" id="set"><div class="panel">
+  <h2>⚙️ Settings</h2>
+  <div class="row">Sound effects <div class="seg" id="s-sfx"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
+  <div class="row">Speak numbers <div class="seg" id="s-voice"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
+  <div class="row">Points per number <div class="seg" id="s-pts"><button data-v="1">1</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
+  <div class="row">Difficulty <div class="seg" id="s-diff"><button data-v="34">Easy ➜</button><button data-v="20">Med</button><button data-v="9">Hard</button></div></div>
+  <div class="row">Numbers <div class="seg" id="s-rng"><button data-v="0-9">0–9</button><button data-v="1-9">1–9</button><button data-v="1-20">1–20</button><button data-v="1-100">1–100</button></div></div>
+  <div class="row">Include + − × ÷ <div class="seg" id="s-signs"><button data-v="1">On</button><button data-v="0">Off</button></div></div>
+  <div class="row">Theme <div class="seg" id="s-theme"><button data-v="auto">Auto</button><button data-v="light">☀️</button><button data-v="dark">🌙</button></div></div>
+  <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+    <button class="btn alt" id="restart">New game</button><button class="btn" id="close">Close</button>
+  </div>
+  <div class="credit">Made With ❤️ By <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener">KungPowUnicorn</a></div>
+</div></div>
+
+<div class="ov" id="end"><div class="panel">
+  <p class="big" id="eico"></p><h2 id="etxt"></h2>
+  <button class="btn" id="again">Play again</button>
+</div></div>
+
+<script>
+const $=id=>document.getElementById(id);
+let cfg={sfx:1,voice:1,pts:5,diff:20,rng:'0-9',signs:0,theme:'auto'};
+try{Object.assign(cfg,JSON.parse(localStorage.getItem('dtn')||'{}'))}catch(e){}
+if(cfg.rng==='math')cfg.signs=1;
+if(typeof cfg.rng!=='string'||cfg.rng.indexOf('-')<0)cfg.rng='0-9';
+const save=()=>{try{localStorage.setItem('dtn',JSON.stringify(cfg))}catch(e){}};
+/* stroke guides: points in a 0..1 box per digit, in writing order */
+const P={0:[[[.5,0],[.15,.12],[.05,.5],[.15,.88],[.5,1],[.85,.88],[.95,.5],[.85,.12],[.5,0]]],
+1:[[[.5,0],[.5,1]]],
+2:[[[.1,.2],[.3,.02],[.6,.02],[.88,.2],[.85,.45],[.1,1],[.92,1]]],
+3:[[[.1,.12],[.35,0],[.65,0],[.88,.15],[.8,.4],[.45,.5],[.82,.58],[.92,.8],[.7,.98],[.35,.98],[.08,.85]]],
+4:[[[.72,0],[.05,.72],[.95,.72]],[[.72,.25],[.72,1]]],
+5:[[[.22,0],[.16,.48],[.5,.4],[.82,.52],[.92,.74],[.75,.96],[.45,1],[.1,.88]],[[.88,0],[.3,0]]],
+6:[[[.8,.1],[.5,0],[.2,.2],[.08,.6],[.2,.92],[.5,1],[.8,.9],[.9,.68],[.7,.45],[.4,.45],[.12,.62]]],
+7:[[[.08,0],[.92,0]],[[.88,.04],[.4,1]]],
+8:[[[.5,.48],[.2,.35],[.2,.12],[.5,0],[.8,.12],[.8,.35],[.5,.48],[.15,.7],[.15,.9],[.5,1],[.85,.9],[.85,.7],[.5,.48]]],
+'+':[[[.5,.18],[.5,.82]],[[.05,.5],[.95,.5]]],
+'-':[[[.05,.5],[.95,.5]]],
+'×':[[[.1,.2],[.9,.8]],[[.9,.2],[.1,.8]]],
+'÷':[[[.05,.5],[.95,.5]],[[.5,.12],[.5,.22]],[[.5,.78],[.5,.88]]],
+9:[[[.9,.35],[.75,.08],[.48,0],[.2,.1],[.1,.32],[.22,.5],[.5,.58],[.82,.45],[.9,.35],[.88,.7],[.7,.95],[.3,1],[.1,.88]]]};
+
+let need=0,drawn=0,score=1,num=0,S=300,dpr=1,tolM,fillM,cells,total,covered,cov,BR=20,drawing=false,lastP=null,outAcc=0,wasOut=false,locked=false,over=false,last=-1;
+const STEP=6;
+const cg=$('cg'),cd=$('cd'),gx=cg.getContext('2d'),dx=cd.getContext('2d');
+
+/* audio */
+let ac;
+function tone(f,d,t='sine',v=.15,when=0){if(!cfg.sfx)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.value=v;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+when+d);o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+when);o.stop(ac.currentTime+when+d)}catch(e){}}
+const sGood=()=>[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',.18,i*.1));
+const sBad=()=>tone(160,.18,'sawtooth',.1);
+const sWin=()=>[523,659,784,1047,1319,1568].forEach((f,i)=>tone(f,.3,'triangle',.18,i*.12));
+const sLose=()=>[400,330,260,180].forEach((f,i)=>tone(f,.35,'sawtooth',.1,i*.18));
+function say(t){if(!cfg.voice||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.85;u.pitch=1.25;speechSynthesis.speak(u)}catch(e){}}
+
+/* gauge */
+function setScore(n,hit){score=Math.max(0,Math.min(100,n));$('fill').style.width=Math.max(1,score)+'%';$('glab').textContent=score+' / 100';
+  if(hit){$('fill').classList.add('hit');setTimeout(()=>$('fill').classList.remove('hit'),250)}
+  if(score>=100)finish(true);else if(score<=0)finish(false)}
+function finish(win){over=true;locked=true;$('eico').textContent=win?'🏆':'😢';$('etxt').textContent=win?'You win! Amazing!':'Game over. Try again!';
+  setTimeout(()=>{$('end').classList.add('on');win?sWin():sLose();say(win?'You win! Amazing!':'Game over. Try again!')},400)}
+function penalty(n){if(locked)return;sBad();setScore(score-n,true)}
+
+/* geometry: the number is drawn from the stroke paths themselves, so guide, bounds and scoring always match */
+let T=[],vis=null,RW=30,ER=15;
+function geo(){const s=String(num),n=s.length;return{s,n,fs:Math.min(S*.9,S*1.28/n),adv:Math.min(S*.9,S*1.28/n)*.7}}
+function strokes(g){const out=[],W=g.fs*.5,H=g.fs*.78,y0=S/2-H/2;
+  [...g.s].forEach((ch,i)=>{const x0=S/2+(i-(g.n-1)/2)*g.adv-W/2;
+    P[ch].forEach((st,si)=>out.push({q:st.map(p=>[x0+p[0]*W,y0+p[1]*H]),si,multi:P[ch].length>1}))});return out}
+function curve(c,q){c.beginPath();c.moveTo(q[0][0],q[0][1]);
+  for(let k=1;k<q.length-1;k++)c.quadraticCurveTo(q[k][0],q[k][1],(q[k][0]+q[k+1][0])/2,(q[k][1]+q[k+1][1])/2);
+  c.lineTo(q[q.length-1][0],q[q.length-1][1])}
+function samples(q){const pts=[];let cur=q[0];
+  const part=(c,e)=>{const n=Math.max(2,Math.ceil(Math.hypot(e[0]-cur[0],e[1]-cur[1])/3));for(let t=0;t<=n;t++){const u=t/n,v=1-u;pts.push([v*v*cur[0]+2*v*u*c[0]+u*u*e[0],v*v*cur[1]+2*v*u*c[1]+u*u*e[1]])}cur=e};
+  for(let k=1;k<q.length-1;k++)part(q[k],[(q[k][0]+q[k+1][0])/2,(q[k][1]+q[k+1][1])/2]);
+  const L=q[q.length-1];part([(cur[0]+L[0])/2,(cur[1]+L[1])/2],L);return pts}
+function layout(){const st=$('stage');S=Math.max(120,Math.floor(Math.min(st.clientWidth-24,st.clientHeight-8,560)));
+  const b=$('box');b.style.width=b.style.height=S+'px';dpr=window.devicePixelRatio||1;
+  [cg,cd].forEach(c=>{c.width=c.height=Math.round(S*dpr)});build()}
+function build(){const g=geo(),st=strokes(g);BR=g.fs*.1;RW=g.fs*.11;
+  const o=document.createElement('canvas');o.width=o.height=S;const c=o.getContext('2d',{willReadFrequently:true});
+  c.lineCap=c.lineJoin='round';c.lineWidth=RW+cfg.diff*2;c.strokeStyle='#000';st.forEach(s=>{curve(c,s.q);c.stroke()});
+  tolM=c.getImageData(0,0,S,S).data;
+  BR=RW*.5+cfg.diff*.3;ER=g.fs*.045;T=st.map(s=>({p:samples(s.q),g:-1,fin:false}));total=T.reduce((a,s)=>a+s.p.length,0);covered=0;
+  drawGuide();dx.setTransform(dpr,0,0,dpr,0,0);dx.clearRect(0,0,S,S)}
+function drawGuide(){gx.setTransform(dpr,0,0,dpr,0,0);gx.clearRect(0,0,S,S);
+  const ink=getComputedStyle(document.documentElement).getPropertyValue('--ink').trim(),g=geo(),st=strokes(g);
+  gx.lineCap=gx.lineJoin='round';gx.globalAlpha=.14;gx.strokeStyle=ink;gx.lineWidth=RW;st.forEach(s=>{curve(gx,s.q);gx.stroke()});gx.globalAlpha=1;
+  if(cfg.diff<30)return;
+  const a=Math.max(3,g.fs*.026),r=a*1.8;
+  st.forEach(({q,si,multi})=>{gx.strokeStyle='#3a86ff';gx.lineWidth=Math.max(2,g.fs*.016);gx.setLineDash([a*2,a*1.6]);curve(gx,q);gx.stroke();gx.setLineDash([]);
+    const e=q[q.length-1],s0=q[0];gx.lineWidth=2;gx.strokeStyle='#fff';
+    gx.fillStyle='#e63946';gx.beginPath();gx.arc(e[0],e[1],r,0,7);gx.fill();gx.stroke();
+    gx.fillStyle='#2ec4b6';gx.beginPath();gx.arc(s0[0],s0[1],r,0,7);gx.fill();gx.stroke();
+    if(multi){gx.fillStyle='#fff';gx.font='bold '+r*1.5+'px Arial';gx.textAlign='center';gx.textBaseline='middle';gx.fillText(si+1,s0[0],s0[1]+1)}})}
+
+/* game flow */
+const SYM={'+':'plus','-':'minus','×':'times','÷':'divided by'};
+const ask=()=>SYM[num]?'Draw the '+SYM[num]+' sign':'Draw the number '+num;
+function pick(){const r=cfg.rng.split('-').map(Number),a=r[0],b=r[1];let n;
+  do{n=(cfg.signs&&Math.random()<.25)?'+-×÷'[Math.floor(Math.random()*4)]:a+Math.floor(Math.random()*(b-a+1))}while(n===last);return n}
+function nextNum(){num=last=pick();locked=false;$('prompt').textContent=(SYM[num]?'Draw the '+SYM[num]+' sign ('+num+')':'Draw the number '+num)+(cfg.diff>=30?'  (🟢 start, 🔴 end)':'');build();say(ask())}
+function inB(x,y){x=Math.round(x);y=Math.round(y);return x>=0&&y>=0&&x<S&&y<S&&tolM[(y*S+x)*4+3]>128}
+/* progress must advance along each stroke in order, start to end */
+function mark(x,y){const r2=BR*BR;covered=0;
+  T.forEach(s=>{const hi=Math.min(s.p.length-1,s.g+12);let bj=-1,bd=r2;
+    for(let j=s.g+1;j<=hi;j++){const dxx=s.p[j][0]-x,dyy=s.p[j][1]-y,d=dxx*dxx+dyy*dyy;if(d<=bd){bd=d;bj=j}}
+    if(bj>s.g)s.g=bj;
+    if(!s.fin&&s.g>=s.p.length-2){const e=s.p[s.p.length-1];if(Math.hypot(e[0]-x,e[1]-y)<=ER)s.fin=true}
+    covered+=s.g+1})}
+const done=()=>T.length>0&&T.every(s=>s.fin);
+function seg(a,b){const d=Math.hypot(b.x-a.x,b.y-a.y),k=Math.max(1,Math.ceil(d/4));let bad=false;
+  for(let t=1;t<=k;t++){const x=a.x+(b.x-a.x)*t/k,y=a.y+(b.y-a.y)*t/k;
+    if(inB(x,y)){mark(x,y);wasOut=false;drawn+=d/k}else{bad=true;outAcc+=d/k;if(!wasOut){wasOut=true;penalty(1);outAcc=0}else if(outAcc>=60){outAcc=0;penalty(1)}}}
+  dx.lineCap=dx.lineJoin='round';dx.lineWidth=RW*.45;dx.strokeStyle=bad?'rgba(255,94,91,.85)':'rgba(46,196,182,.9)';dx.beginPath();dx.moveTo(a.x,a.y);dx.lineTo(b.x,b.y);dx.stroke();
+  if(!locked&&total>0&&done())success()}
+function success(){locked=true;drawing=false;sGood();say('Great job!');$('prompt').textContent='⭐ Great job! ⭐';
+  dx.globalAlpha=.6;dx.strokeStyle='#2ec4b6';dx.lineCap=dx.lineJoin='round';dx.lineWidth=RW;strokes(geo()).forEach(s=>{curve(dx,s.q);dx.stroke()});dx.globalAlpha=1;
+  setScore(score+cfg.pts);if(!over)setTimeout(()=>{if(!over)nextNum()},1300)}
+function pos(e){const r=cd.getBoundingClientRect();return{x:(e.clientX-r.left)*S/r.width,y:(e.clientY-r.top)*S/r.height}}
+cd.addEventListener('pointerdown',e=>{if(locked)return;e.preventDefault();try{cd.setPointerCapture(e.pointerId)}catch(x){}drawing=true;wasOut=false;outAcc=0;lastP=pos(e);seg(lastP,{x:lastP.x+.01,y:lastP.y})});
+cd.addEventListener('pointermove',e=>{if(!drawing||locked)return;e.preventDefault();const p=pos(e);seg(lastP,p);lastP=p});
+['pointerup','pointercancel'].forEach(t=>cd.addEventListener(t,()=>{drawing=false;wasOut=false}));
+
+/* ui */
+const keys={'s-sfx':'sfx','s-voice':'voice','s-pts':'pts','s-diff':'diff','s-rng':'rng','s-signs':'signs','s-theme':'theme'},strs=['rng','theme'];
+function sync(){for(const id in keys)$(id).querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===String(cfg[keys[id]])));
+  const r=document.documentElement;cfg.theme==='auto'?r.removeAttribute('data-theme'):r.setAttribute('data-theme',cfg.theme)}
+Object.keys(keys).forEach(id=>$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;const k=keys[id];
+  cfg[k]=strs.includes(k)?b.dataset.v:Number(b.dataset.v);save();sync();
+  if(k==='theme')drawGuide();else if(k==='diff')nextNum();else if(k==='rng'||k==='signs')nextNum()}));
+$('gear').onclick=()=>$('set').classList.add('on');
+$('close').onclick=()=>$('set').classList.remove('on');
+$('set').addEventListener('click',e=>{if(e.target.id==='set')$('set').classList.remove('on')});
+$('hear').onclick=()=>say(ask());
+$('clear').onclick=()=>{if(!locked)build()};
+$('skip').onclick=()=>{if(!locked)nextNum()};
+function restart(){over=false;$('end').classList.remove('on');$('set').classList.remove('on');setScore(1);nextNum()}
+$('restart').onclick=restart;$('again').onclick=restart;
+let rt;window.addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{if(!locked){layout()}},150)});
+sync();layout();setScore(1);nextNum();
+</script>
+</body>
+</html>
