@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Snake</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="snake.js"></script>
+    <style>
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 255px auto;
+        padding: 20px;
+        width: 320px;
+        display: block;
+      }
+      #start>div:first-child {
+        font-size: 20pt;
+        padding-bottom: 1em;
+      }
+      .keys {
+        font-family: monospace;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: absolute;
+        width: 100%;
+      }
+      #grid {
+        border-collapse: collapse;
+        margin: auto;
+      }
+      #grid td {
+        background-image: url('sprites.png');
+        background-position: -60px -90px;
+        height: 30px;
+        margin: 0;
+        padding: 0;
+        width: 30px;
+      }
+      #grid .even {
+        background-color: #2ea922;
+      }
+      #grid .odd {
+        background-color: #2e9f22;
+      }
+
+      #grid .player1.head.dir-0,
+      #grid .player1.tail.dir-1 {
+        background-position: 0 0;
+      }
+      #grid .player1.head.dir-1,
+      #grid .player1.tail.dir-0 {
+        background-position: -60px 0;
+      }
+      #grid .player1.head.dir-2,
+      #grid .player1.tail.dir-3 {
+        background-position: 0 -30px;
+      }
+      #grid .player1.head.dir-3,
+      #grid .player1.tail.dir-2 {
+        background-position: 0 -90px;
+      }
+      #grid .player1.body.dir-0,
+      #grid .player1.body.dir-1 {
+        background-position: -30px 0;
+      }
+      #grid .player1.body.dir-2,
+      #grid .player1.body.dir-3 {
+        background-position: 0 -60px;
+      }
+      #grid .player1.turn-ccw.dir-0,
+      #grid .player1.turn-cw.dir-3 {
+        background-position: -60px -30px;
+      }
+      #grid .player1.turn-ccw.dir-1,
+      #grid .player1.turn-cw.dir-2 {
+        background-position: -30px -60px;
+      }
+      #grid .player1.turn-ccw.dir-2,
+      #grid .player1.turn-cw.dir-0 {
+        background-position: -60px -60px;
+      }
+      #grid .player1.turn-ccw.dir-3,
+      #grid .player1.turn-cw.dir-1 {
+        background-position: -30px -30px;
+      }
+
+      #grid .player2.head.dir-0,
+      #grid .player2.tail.dir-1 {
+        background-position: -90px 0;
+      }
+      #grid .player2.head.dir-1,
+      #grid .player2.tail.dir-0 {
+        background-position: -150px 0;
+      }
+      #grid .player2.head.dir-2,
+      #grid .player2.tail.dir-3 {
+        background-position: -150px -30px;
+      }
+      #grid .player2.head.dir-3,
+      #grid .player2.tail.dir-2 {
+        background-position: -150px -90px;
+      }
+      #grid .player2.body.dir-0,
+      #grid .player2.body.dir-1 {
+        background-position: -120px 0;
+      }
+      #grid .player2.body.dir-2,
+      #grid .player2.body.dir-3 {
+        background-position: -150px -60px;
+      }
+      #grid .player2.turn-ccw.dir-0,
+      #grid .player2.turn-cw.dir-3 {
+        background-position: -120px -30px;
+      }
+      #grid .player2.turn-ccw.dir-1,
+      #grid .player2.turn-cw.dir-2 {
+        background-position: -90px -60px;
+      }
+      #grid .player2.turn-ccw.dir-2,
+      #grid .player2.turn-cw.dir-0 {
+        background-position: -120px -60px;
+      }
+      #grid .player2.turn-ccw.dir-3,
+      #grid .player2.turn-cw.dir-1 {
+        background-position: -90px -30px;
+      }
+
+      #grid .food {
+        background-position: -30px -90px;
+       }
+      #grid .border {
+        background-color: #888;
+      }
+      #options {
+        float: right;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="options">
+      <select id="players">
+        <option value=1>1 Player</option>
+        <option value=2>2 Players</option>
+      </select>
+      <select id="difficulty">
+        <option value=0>Easy</option>
+        <option value=1>Normal</option>
+        <option value=2>Hard</option>
+      </select>
+    </div>
+    <h1><a href="../">Beaver Games</a> : Snake</h1>
+    <div id="startDiv">
+      <button id="start">
+        <div>Start</div>
+        <div class="keys">Player 1 keys: &uarr; &larr; &darr; &rarr;</div>
+        <div class="keys" id="player2keys">Player 2 keys: W A S D</div>
+      </button>
+    </div>
+    <table id="grid"></table>
+    <audio id="crash" src="../common/crash.mp3"></audio>
+    <audio id="apple" src="apple.mp3"></audio>
+  </body>
+</html>

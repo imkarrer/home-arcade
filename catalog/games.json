@@ -76,6 +76,16 @@
       ]
     },
     {
+      "id": "beaver_games",
+      "title": "Beaver Games",
+      "kind": "web",
+      "shelf": "learning",
+      "icon": "🧩",
+      "modes": ["solo"],
+      "page": "www/games/beaver_games/index.html",
+      "source": "https://github.com/NeilFraser/beaver-games/tree/e56069765e774ea957ae70378251c846fd67726b"
+    },
+    {
       "id": "ss_treasure_mountain",
       "title": "Super Solvers: Treasure Mountain!",
       "shelf": "learning",

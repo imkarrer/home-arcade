@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Maze</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="maze.js"></script>
+    <style>
+      #options {
+        float: right;
+      }
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 150px auto;
+        padding: 20px;
+        width: 220px;
+        display: block;
+      }
+      #start>div:first-child {
+        font-size: 20pt;
+        padding-bottom: 1em;
+      }
+      .keys {
+        font-family: monospace;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: absolute;
+        width: 100%;
+      }
+      #landscape {
+        border: 10px solid #888;
+        display: block;
+        margin: auto;
+        background-color: #888;
+      }
+      .path {
+        fill: #2E5FFF;
+      }
+      #avatarPath {
+        fill: none;
+        stroke: #F0A609;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      #avatar {
+        fill: #F0A609;
+      }
+      #goal {
+        fill: #D02E2B;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="options">
+      <select id="difficulty">
+        <option value=0>Easy</option>
+        <option value=1>Normal</option>
+        <option value=2>Hard</option>
+      </select>
+    </div>
+    <h1><a href="../">Beaver Games</a> : Maze</h1>
+
+    <div id="startDiv">
+      <button id="start">
+        <div>Start</div>
+        <div class="keys">Keys: &uarr; &larr; &darr; &rarr;</div>
+      </button>
+    </div>
+
+    <svg id="landscape" xmlns="http://www.w3.org/2000/svg">
+      <g id="wallLayer"></g>
+      <g id="goalLayer"></g>
+      <g id="avatarLayer"></g>
+    </svg>
+    <audio id="ding" src="../common/ding.mp3"></audio>
+  </body>
+</html>

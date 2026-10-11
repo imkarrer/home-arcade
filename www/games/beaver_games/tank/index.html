@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Tank</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="tank.js"></script>
+    <style>
+      #options {
+        float: right;
+      }
+      #landscape {
+        display: block;
+        margin: auto;
+      }
+      .tank {
+        stroke: none;
+      }
+      .shell {
+        stroke: none;
+      }
+      .player1 {
+        fill: #F0A609;
+      }
+      .player2 {
+        fill: #178F47;
+      }
+      .player3 {
+        fill: #2E5FFF;
+      }
+      .grid {
+        fill: #444;
+        stroke: #222;
+      }
+      .gridWall {
+        fill: #222;
+      }
+      #info {
+        float: left;
+        font-family: monospace;
+      }
+      #scores {
+        margin-bottom: 2em;
+        font-size: 24pt;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="options">
+      <select id="players">
+        <option value=1>1 Player</option>
+        <option value=2>2 Players</option>
+      </select>
+      <select id="difficulty">
+        <option value=0>Slow</option>
+        <option value=1>Fast</option>
+      </select>
+    </div>
+    <h1><a href="../">Beaver Games</a> : Tank</h1>
+
+    <div id="info">
+      <div id="scores">
+        <p>
+          <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="0,-2 2,2 0,1 -2,2" class="tank player1"
+                     transform="translate(10, 10) rotate(90) scale(5)"></polygon>
+          </svg>
+          <span id="player1score">0</span>
+        </p>
+        <p id="player2scores">
+          <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="0,-2 2,2 0,1 -2,2" class="tank player2"
+                     transform="translate(10, 10) rotate(90) scale(5)"></polygon>
+          </svg>
+          <span id="player2score">0</span>
+        </p>
+        <p>
+          <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="0,-2 2,2 0,1 -2,2" class="tank player3"
+                     transform="translate(10, 10) rotate(90) scale(5)"></polygon>
+          </svg>
+          <span id="player3score">0</span>
+        </p>
+      </div>
+
+      <h3>Player 1 keys:</h3>
+      <table>
+        <tr>
+          <td>1</td>
+          <td>Turn left</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Turn right</td>
+        </tr>
+        <tr>
+          <td>1+2</td>
+          <td>Move forwards</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Fire</td>
+        </tr>
+      </table>
+      <div id="player2keys">
+        <h3>Player 2 keys:</h3>
+        <table>
+          <tr>
+            <td>8</td>
+            <td>Turn left</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>Turn right</td>
+          </tr>
+          <tr>
+            <td>8+9</td>
+            <td>Move forwards</td>
+          </tr>
+          <tr>
+            <td>0</td>
+            <td>Fire</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+
+    <svg id="landscape" height="540" width="814" xmlns="http://www.w3.org/2000/svg">
+      <g id="grid"></g>
+      <g id="hulks"></g>
+    </svg>
+    <audio id="bang" src="bang.mp3"></audio>
+  </body>
+</html>
