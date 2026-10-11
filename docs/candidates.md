@@ -20,7 +20,6 @@ Not a deploy list. v1 tiles stay in [`plan-arcade.md`](plan-arcade.md#game-catal
 | --- | --- |
 | **FOSS** | Free clients on every station. Fine to ship. |
 | **own copy** | Put on `/srv/arcade` only if the discs/dumps are already in the house. Do not fetch from IA or torrents. |
-| **unlicensed** | Public repo, no license anywhere. All rights reserved by default: do not copy to the hub without the author's say-so. |
 
 ## Ship first
 
@@ -34,7 +33,6 @@ Not a deploy list. v1 tiles stay in [`plan-arcade.md`](plan-arcade.md#game-catal
 - Veloren, Space Station 14, Beyond All Reason, FlightGear — GPU.
 - OpenRA / OpenRCT2 / CorsixTH / Julius / DevilutionX / OpenXcom **assets you do not own**.
 - SuperTuxKart only at the low / fallback preset at 1080p.
-- arun-ks/ToddlerGames — no license, so not ours to copy. Ask the author to add one first.
 
 `gpu: tune low` needs graphics turned down. `kids: no` is a poor little-kid fit (violence / complexity).
 
@@ -72,9 +70,6 @@ Not a deploy list. v1 tiles stay in [`plan-arcade.md`](plan-arcade.md#game-catal
 | The Powder Toy | Sandbox physics | FOSS | solo | light | yes | CPU sandbox. Not a hosted world. |
 | GCompris | Education suite | FOSS | solo | trivial | yes | Many small activities. Ages 2–10. |
 | Tux Math / Tux Typing | Education | FOSS | solo | trivial | yes | Arcade-style drills. |
-| KungPowUnicorn/map | HTML5 toddler games | FOSS | solo | trivial | yes | MIT. 14 one-file games: colors, numbers, shapes, letters. From [github.com/topics/toddler-games](https://github.com/topics/toddler-games). Browser only; see below. |
-| RazHadas/sofi-games | HTML5 toddler games | FOSS | solo | trivial | yes | Ages 1–3: animals, bubbles, piano, fireworks, finger paint. README says MIT but there is no LICENSE file. Same topic page. |
-| arun-ks/ToddlerGames | HTML5 toddler games | unlicensed | solo | trivial | yes | Burst balloons, line drawing, alphabet sort. Touch-first. No license: see Do not deploy. |
 | Colobot | Code + robots | FOSS | solo | light | older | Program robots. 3D but old-school. |
 | Shattered Pixel Dungeon | Roguelike | FOSS | solo | trivial | older | 2D. No MP. |
 | Frogatto | Platformer | FOSS | solo | trivial | yes | 2D. Code is open; assets CC-ish. |
@@ -97,10 +92,6 @@ Not a deploy list. v1 tiles stay in [`plan-arcade.md`](plan-arcade.md#game-catal
 | CorsixTH + Theme Hospital | Hospital sim | own copy | solo | trivial | older | FOSS engine. Needs Bullfrog data. |
 | OpenXcom + UFO Defense | Tactics | own copy | solo | trivial | no | Needs original X-COM. Combat, not little-kid. |
 | DevilutionX + Diablo | Action RPG | own copy | listen / LAN | trivial | no | FOSS engine. Needs Diablo. Violence. |
-
-## Browser games
-
-The three HTML5 rows are plain static pages. The catalog only launches `retroarch` and `native` entries (`windows/arcade-launch.ps1`), so they have no tile until a browser kind exists (bead arc-sb4).
 
 ## Dedicated-hub subset
 

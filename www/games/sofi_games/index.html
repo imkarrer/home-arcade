@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>משחקי סופי</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html,body { width:100%; height:100%; overflow:hidden; font-family:'Arial Rounded MT Bold',Arial,sans-serif; touch-action:manipulation; }
+
+    #bg {
+      position:fixed; inset:0;
+      transition:background 60s linear;
+      z-index:0;
+    }
+
+    /* Stars */
+    .star {
+      position:absolute; background:white; border-radius:50%;
+      animation:twinkle var(--dur) ease-in-out infinite;
+    }
+    @keyframes twinkle {
+      0%,100% { opacity:0.15; transform:scale(1); }
+      50%      { opacity:0.9;  transform:scale(1.5); }
+    }
+
+    #screen {
+      position:fixed; inset:0;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:clamp(14px, 3vh, 28px);
+      padding:clamp(12px, 3vw, 32px);
+      z-index:10;
+    }
+
+    /* Grid: 3 cards — adapts to portrait/landscape */
+    #cards {
+      display:flex;
+      flex-wrap:wrap;
+      gap:clamp(12px, 2.5vw, 28px);
+      justify-content:center;
+      align-items:center;
+      width:100%;
+      max-width:900px;
+    }
+
+    .card {
+      flex:1 1 clamp(180px, 28vw, 280px);
+      max-width:300px;
+      aspect-ratio:1 / 1.05;
+      border-radius:36px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      cursor:pointer;
+      box-shadow:0 12px 40px rgba(0,0,0,0.45);
+      position:relative;
+      overflow:hidden;
+      /* Gentle float animation */
+      animation:float var(--fdur) ease-in-out infinite;
+      animation-delay:var(--fdelay);
+      transition:transform 0.1s ease, box-shadow 0.1s ease;
+    }
+
+    @keyframes float {
+      0%,100% { transform:translateY(0px)    rotate(var(--ftilt)); }
+      50%      { transform:translateY(-14px)  rotate(calc(var(--ftilt) * -1)); }
+    }
+
+    .card::after {
+      content:'';
+      position:absolute; inset:0;
+      background:rgba(255,255,255,0);
+      transition:background 0.08s;
+      border-radius:inherit;
+    }
+    .card.pressed::after { background:rgba(255,255,255,0.3); }
+
+    .card-emoji {
+      font-size:clamp(64px, 15vw, 110px);
+      line-height:1;
+      filter:drop-shadow(0 6px 14px rgba(0,0,0,0.35));
+      pointer-events:none;
+    }
+
+    .card-name {
+      font-size:clamp(22px, 5vw, 40px);
+      font-weight:900;
+      color:white;
+      text-shadow:0 3px 10px rgba(0,0,0,0.5);
+      letter-spacing:1px;
+      pointer-events:none;
+    }
+
+    /* Tap ripple */
+    .ripple {
+      position:absolute;
+      border-radius:50%;
+      background:rgba(255,255,255,0.5);
+      pointer-events:none;
+      animation:rippleOut 0.5s ease-out forwards;
+    }
+    @keyframes rippleOut {
+      0%   { width:20px; height:20px; margin:-10px; opacity:1; }
+      100% { width:380px; height:380px; margin:-190px; opacity:0; }
+    }
+
+    /* Title */
+    #title {
+      font-size:clamp(22px, 5vw, 42px);
+      font-weight:900;
+      color:rgba(255,255,255,0.88);
+      text-shadow:0 3px 12px rgba(0,0,0,0.5);
+      letter-spacing:3px;
+      z-index:10;
+    }
+
+    /* Tablet 1280×800: fill the screen */
+    @media (min-width:600px) {
+      .card {
+        aspect-ratio: auto;
+        min-height: clamp(240px, 60vh, 480px);
+        flex: 1 1 clamp(220px, 28vw, 360px);
+        max-width: 380px;
+      }
+      .card-emoji { font-size: clamp(72px, 14vw, 160px); }
+      #cards      { max-width: 1200px; }
+    }
+  </style>
+  <script>
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    // Block pinch zoom (Android Chrome ignores user-scalable=no)
+    document.addEventListener('touchmove', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+    document.addEventListener('touchstart', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+  </script>
+</head>
+<body>
+<div id="bg"></div>
+<div id="screen">
+  <div id="title">✨ משחקי סופי ✨</div>
+  <div id="cards"></div>
+</div>
+
+<script src="theme.js"></script>
+<script>
+// ─── Theme ────────────────────────────────────────────────────────
+const bgEl = document.getElementById('bg');
+applyTimeTheme(bgEl);
+setInterval(() => applyTimeTheme(bgEl), 60000);
+
+// Stars
+(function() {
+  for (let i = 0; i < 55; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() * 3 + 1;
+    s.style.cssText = 'width:'+sz+'px;height:'+sz+'px;top:'+(Math.random()*100)+'%;left:'+(Math.random()*100)+'%;--dur:'+(Math.random()*3+2).toFixed(1)+'s;animation-delay:'+(Math.random()*5).toFixed(1)+'s';
+    bgEl.appendChild(s);
+  }
+})();
+
+// ─── Games ────────────────────────────────────────────────────────
+const GAMES = [
+  { emoji:'🐶', name:'חיות',   url:'animals.html', bg:['#e8603c','#f5a623'], tilt:'-1.5deg', dur:'4.2s', delay:'0s'    },
+  { emoji:'🌊', name:'בועות',  url:'bubbles.html', bg:['#3498db','#9b59b6'], tilt:'1deg',   dur:'3.8s', delay:'0.5s'  },
+  { emoji:'🎹', name:'פסנתר',  url:'piano.html',   bg:['#27ae60','#f1c40f'], tilt:'-0.8deg',dur:'4.6s', delay:'0.25s' },
+  { emoji:'🎆', name:'זיקוקים', url:'fireworks.html', bg:['#8e44ad','#e74c3c'], tilt:'1.2deg', dur:'4.0s', delay:'0.75s' },
+  { emoji:'🖍️', name:'ציור',   url:'draw.html',      bg:['#16a085','#e91e8c'], tilt:'-1.2deg',dur:'4.4s', delay:'1s'    },
+];
+
+const cardsEl = document.getElementById('cards');
+
+GAMES.forEach(g => {
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.style.background = 'linear-gradient(145deg,' + g.bg[0] + ',' + g.bg[1] + ')';
+  card.style.setProperty('--ftilt',  g.tilt);
+  card.style.setProperty('--fdur',   g.dur);
+  card.style.setProperty('--fdelay', g.delay);
+  card.innerHTML =
+    '<div class="card-emoji">' + g.emoji + '</div>' +
+    '<div class="card-name">'  + g.name  + '</div>';
+
+  card.addEventListener('pointerdown', function(e) {
+    e.preventDefault();
+    card.classList.add('pressed');
+
+    const ripple = document.createElement('div');
+    ripple.className = 'ripple';
+    const rect = card.getBoundingClientRect();
+    ripple.style.left = (e.clientX - rect.left) + 'px';
+    ripple.style.top  = (e.clientY - rect.top)  + 'px';
+    card.appendChild(ripple);
+    ripple.addEventListener('animationend', () => ripple.remove());
+  });
+
+  card.addEventListener('pointerup', function(e) {
+    const rect = card.getBoundingClientRect();
+    const inside = e.clientX >= rect.left && e.clientX <= rect.right &&
+                   e.clientY >= rect.top  && e.clientY <= rect.bottom;
+    card.classList.remove('pressed');
+    if (inside) setTimeout(() => window.location.href = g.url, 120);
+  });
+
+  card.addEventListener('pointercancel', () => card.classList.remove('pressed'));
+
+  cardsEl.appendChild(card);
+});
+</script>
+
+<!-- Fullscreen button -->
+<div id="fsbtn" style="position:fixed;bottom:22px;right:22px;width:64px;height:64px;z-index:999;cursor:pointer;opacity:0.35;transition:opacity 0.15s;touch-action:none;">
+  <svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+    <g stroke="white" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M18 26 L18 18 L26 18"/><path d="M38 18 L46 18 L46 26"/>
+      <path d="M46 38 L46 46 L38 46"/><path d="M26 46 L18 46 L18 38"/>
+    </g>
+  </svg>
+</div>
+<script>
+(function(){
+  const btn = document.getElementById('fsbtn');
+  function isFS() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function enterFS() { const el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(()=>{}); }
+  function exitFS()  { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+
+  // Browsers block requestFullscreen without a user gesture.
+  // Wait for the first touch on the new page, then restore fullscreen.
+  if (sessionStorage.getItem('fs') === '1')
+    document.addEventListener('pointerdown', enterFS, { once: true, capture: true });
+
+  btn.addEventListener('pointerdown', function(e) {
+    e.stopPropagation(); btn.style.opacity = '1';
+    if (!isFS()) { enterFS(); sessionStorage.setItem('fs', '1'); }
+    else         { exitFS();  sessionStorage.removeItem('fs'); }
+    setTimeout(() => btn.style.opacity = '0.35', 300);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Color Monster</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%91%BE%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#fff7e8;--card:#fff;--ink:#2b2340;--mute:#7a7090;--line:#e6dcc8;--accent:#6c4cf1;--good:#2e9e5b;--bad:#e5484d;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1730;--card:#2a2445;--ink:#f4efff;--mute:#a79ec4;--line:#3d3560}}
+:root[data-theme="dark"]{--bg:#1b1730;--card:#2a2445;--ink:#f4efff;--mute:#a79ec4;--line:#3d3560}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Baloo 2","Trebuchet MS",system-ui,sans-serif;display:flex;justify-content:center;overflow:hidden}
+#app{width:100%;max-width:560px;height:100%;display:flex;flex-direction:column;padding:10px 14px 14px;gap:8px}
+header{display:flex;align-items:center;justify-content:space-between}
+h1{font-size:1.4rem;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+.icon-btn{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--card);font-size:1.4rem;line-height:1}
+.gauge{position:relative;height:30px;border-radius:15px;background:var(--card);border:2px solid var(--line);overflow:hidden}
+#fill{height:100%;width:1%;background:linear-gradient(90deg,#ff7a59,#ffc93c,#4cc76e);transition:width .35s}
+#gnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.95rem}
+.stage{flex:0 0 auto;display:flex;align-items:center;justify-content:center;gap:8px;min-height:0}
+#monster{width:min(42vw,190px);transition:transform .2s}
+#mouth{transform-origin:100px 128px;transform:scaleY(.35);transition:transform .15s}
+#monster.chomp #mouth{transform:scaleY(1.2)}
+#monster.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+#monster.bounce{animation:bounce .5s}
+@keyframes bounce{40%{transform:translateY(-14px)}}
+#bubble{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:10px 14px;text-align:center;max-width:46%;cursor:pointer}
+#bubble small{display:block;color:var(--mute);font-size:.8rem}
+#swatch{width:44px;height:44px;border-radius:50%;margin:4px auto;border:3px solid var(--ink)}
+#word{font-size:1.5rem;font-weight:800;text-transform:uppercase}
+#grid{flex:1;min-height:0;display:grid;gap:10px;grid-template-columns:repeat(2,1fr);grid-auto-rows:1fr}
+#grid.six{grid-template-columns:repeat(3,1fr)}
+.item{background:var(--card);border:3px solid var(--line);border-radius:22px;font-size:clamp(2.4rem,14vw,4.6rem);display:flex;align-items:center;justify-content:center;transition:transform .12s;touch-action:manipulation}
+.item:active{transform:scale(.94)}
+.item.ok{border-color:var(--good);background:color-mix(in srgb,var(--good) 25%,var(--card))}
+.item.no{border-color:var(--bad);animation:shake .4s;opacity:.5}
+.overlay{position:fixed;inset:0;background:rgba(20,10,40,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:10}
+.overlay.show{display:flex}
+.panel{background:var(--card);border-radius:24px;padding:22px;width:100%;max-width:380px;text-align:center;max-height:90%;overflow:auto}
+.panel h2{margin:0 0 6px;font-size:1.7rem}
+.big{background:var(--accent);color:#fff;border:0;border-radius:16px;padding:12px 26px;font-size:1.2rem;font-weight:700;margin-top:12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);text-align:left}
+.credit{margin:14px 0 0;font-size:.7rem;color:var(--mute);opacity:.7}
+.credit a{color:inherit;text-decoration:underline}
+.seg{display:flex;gap:4px}
+.seg button{border:2px solid var(--line);background:var(--bg);border-radius:10px;padding:6px 10px;font-weight:700;min-width:40px}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:#fff}
+</style>
+</head>
+<body>
+<div id="app">
+  <header><h1>👾 Color Monster</h1><button class="icon-btn" id="gear" aria-label="Settings">⚙️</button></header>
+  <div class="gauge"><div id="fill"></div><div id="gnum">1 / 100</div></div>
+  <div class="stage">
+    <svg id="monster" viewBox="0 0 200 200" aria-hidden="true">
+      <path d="M45 150 Q30 60 100 40 Q170 60 155 150 Z" id="body" fill="#e53935" stroke="#00000033" stroke-width="3"/>
+      <path d="M62 52 L52 28 L82 46Z M138 52 L148 28 L118 46Z" id="horns" fill="#e53935" stroke="#00000033" stroke-width="3"/>
+      <circle cx="78" cy="88" r="16" fill="#fff"/><circle cx="122" cy="88" r="16" fill="#fff"/>
+      <circle id="pl" cx="80" cy="90" r="7" fill="#222"/><circle id="pr" cx="124" cy="90" r="7" fill="#222"/>
+      <ellipse id="mouth" cx="100" cy="128" rx="30" ry="22" fill="#4a1020"/>
+      <path d="M78 118 L86 132 L94 118Z M106 118 L114 132 L122 118Z" fill="#fff"/>
+    </svg>
+    <div id="bubble" title="Tap to hear again"><small>I want</small><div id="swatch"></div><div id="word">red</div></div>
+  </div>
+  <div id="grid"></div>
+</div>
+
+<div class="overlay show" id="start"><div class="panel"><h2>Color Monster</h2><p>Feed the monster things that match the color it asks for!</p><button class="big" id="go">▶ Play</button></div></div>
+<div class="overlay" id="end"><div class="panel"><h2 id="etitle"></h2><p id="etext"></p><button class="big" id="again">Play again</button></div></div>
+<div class="overlay" id="set"><div class="panel"><h2>Settings</h2>
+  <div class="row"><span>Points per correct</span><div class="seg" id="s-pts"></div></div>
+  <div class="row"><span>Choices</span><div class="seg" id="s-n"></div></div>
+  <div class="row"><span>Speak colors</span><div class="seg" id="s-voice"></div></div>
+  <div class="row"><span>Sound effects</span><div class="seg" id="s-sfx"></div></div>
+  <div class="row"><span>Show color word</span><div class="seg" id="s-word"></div></div>
+  <p style="color:var(--mute);font-size:.85rem;margin:10px 0 0">Wrong pick: −1. Reach 100 to win, 0 to lose.</p>
+  <button class="big" id="restart" style="background:var(--bad)">Restart game</button><br>
+  <button class="big" id="close">Done</button>
+  <p class="credit">Made With ❤️ By <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener noreferrer">KungPowUnicorn</a></p></div></div>
+
+<script>
+const C={
+red:{hex:'#e53935',i:['🍎','🍓','🍒','🍅','🌹','🚒']},
+orange:{hex:'#fb8c00',i:['🍊','🥕','🎃','🏀','🦊']},
+yellow:{hex:'#fdd835',i:['🍌','🍋','🌻','⭐','🐥']},
+green:{hex:'#43a047',i:['🥦','🐸','🍏','🥒','🐢','🌲']},
+blue:{hex:'#1e88e5',i:['🐳','🫐','🦋','💎','🧢']},
+purple:{hex:'#8e44ad',i:['🍇','🍆','🔮','👾','🪻']},
+pink:{hex:'#ec6fa8',i:['🌸','🐷','🍩','🎀','🦩']},
+brown:{hex:'#8d6040',i:['🐻','🥔','🌰','🍪','🪵']}
+};
+const $=id=>document.getElementById(id);
+let S={pts:5,n:4,voice:true,sfx:true,word:true};
+try{Object.assign(S,JSON.parse(localStorage.getItem('cm-set')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('cm-set',JSON.stringify(S))}catch(e){}};
+let score=1,target=null,busy=false,over=true,ac=null;
+
+function tone(f,d,t='sine',when=0){if(!S.sfx)return;try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(.15,ac.currentTime+when);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+when+d);o.connect(g);g.connect(ac.destination);o.start(ac.currentTime+when);o.stop(ac.currentTime+when+d)}catch(e){}}
+function say(t){if(!S.voice||!('speechSynthesis' in window))return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.9;u.pitch=1.3;speechSynthesis.speak(u)}catch(e){}}
+
+function setScore(v){score=Math.max(0,Math.min(100,v));$('fill').style.width=score+'%';$('gnum').textContent=score+' / 100'}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function round(){
+  busy=false;
+  const keys=Object.keys(C),prev=target;
+  do{target=pick(keys)}while(target===prev);
+  const hex=C[target].hex;
+  ['body','horns'].forEach(id=>$(id).setAttribute('fill',hex));
+  $('swatch').style.background=hex;
+  $('word').textContent=S.word?target:'?';
+  const opts=[{c:target,e:pick(C[target].i)}];
+  shuffle(keys.filter(k=>k!==target)).slice(0,S.n-1).forEach(k=>opts.push({c:k,e:pick(C[k].i)}));
+  const g=$('grid');g.className=S.n===6?'six':'';g.innerHTML='';
+  shuffle(opts).forEach(o=>{
+    const b=document.createElement('button');b.className='item';b.textContent=o.e;b.setAttribute('aria-label',o.e);
+    b.onclick=()=>choose(b,o);g.appendChild(b);
+  });
+  say(target);
+}
+function anim(cls){const m=$('monster');m.classList.remove('chomp','shake','bounce');void m.offsetWidth;m.classList.add(cls);setTimeout(()=>m.classList.remove(cls),450)}
+function choose(b,o){
+  if(busy||over||b.classList.contains('no'))return;
+  if(o.c===target){
+    busy=true;b.classList.add('ok');anim('chomp');
+    tone(523,.12);tone(659,.12,'sine',.1);tone(784,.2,'sine',.2);
+    setScore(score+S.pts);
+    if(score>=100)return finish(true);
+    setTimeout(round,800);
+  }else{
+    b.classList.add('no');anim('shake');tone(180,.3,'sawtooth');
+    setScore(score-1);
+    if(score<=0)finish(false);
+  }
+}
+function finish(win){
+  over=true;busy=true;
+  $('etitle').textContent=win?'🎉 You win!':'💤 Game over';
+  $('etext').textContent=win?'The monster is full and happy!':'The monster is still hungry. Try again!';
+  if(win){tone(523,.15);tone(659,.15,'sine',.15);tone(784,.15,'sine',.3);tone(1047,.4,'sine',.45);say('You win!')}
+  else{tone(300,.25,'triangle');tone(220,.25,'triangle',.25);tone(150,.5,'triangle',.5);say('Game over')}
+  setTimeout(()=>$('end').classList.add('show'),win?700:500);
+}
+function newGame(){
+  ['end','start','set'].forEach(i=>$(i).classList.remove('show'));
+  over=false;setScore(1);target=null;round();
+}
+function seg(id,opts,key){
+  const el=$(id);el.innerHTML='';
+  opts.forEach(([label,val])=>{
+    const b=document.createElement('button');b.textContent=label;b.className=S[key]===val?'on':'';
+    b.onclick=()=>{S[key]=val;save();draw();if(key==='n'&&!over)round();if(key==='word'&&!over)$('word').textContent=S.word?target:'?'};
+    el.appendChild(b);
+  });
+}
+function draw(){
+  seg('s-pts',[[1,1],[5,5],[10,10],[20,20]],'pts');
+  seg('s-n',[['4',4],['6',6]],'n');
+  seg('s-voice',[['On',true],['Off',false]],'voice');
+  seg('s-sfx',[['On',true],['Off',false]],'sfx');
+  seg('s-word',[['On',true],['Off',false]],'word');
+}
+draw();
+$('go').onclick=newGame;
+$('again').onclick=newGame;
+$('restart').onclick=newGame;
+$('gear').onclick=()=>$('set').classList.add('show');
+$('close').onclick=()=>$('set').classList.remove('show');
+$('bubble').onclick=()=>{if(target)say(target)};
+$('set').onclick=e=>{if(e.target.id==='set')$('set').classList.remove('show')};
+</script>
+</body>
+</html>

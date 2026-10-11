@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>בועות</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html,body { width:100%; height:100%; overflow:hidden; touch-action:manipulation; }
+
+    #bg {
+      position:fixed; inset:0;
+      transition: background 60s linear;
+      z-index:0;
+    }
+
+    canvas { position:fixed; inset:0; z-index:1; touch-action:none; }
+
+    /* Pop burst overlay */
+    .burst {
+      position:fixed;
+      pointer-events:none;
+      z-index:10;
+      animation: burstAnim 0.45s ease-out forwards;
+    }
+    @keyframes burstAnim {
+      0%   { transform:scale(0.3); opacity:1; }
+      60%  { transform:scale(1.6); opacity:0.8; }
+      100% { transform:scale(2.2); opacity:0; }
+    }
+  </style>
+  <script>
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('touchmove', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+    document.addEventListener('touchstart', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+  </script>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="c"></canvas>
+
+<script src="theme.js"></script>
+<script src="score.js"></script>
+<script>
+const SCORE = initScore('bubbles');
+
+// ─── Time theme ───────────────────────────────────────────────────
+const bg = document.getElementById('bg');
+function refreshTheme() { applyTimeTheme(bg); }
+refreshTheme();
+setInterval(refreshTheme, 60000); // check every minute
+
+// ─── Canvas setup ─────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Pop sound (Web Audio) ────────────────────────────────────────
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// Resume AudioContext on first touch (required on mobile)
+document.addEventListener('pointerdown', function unlock() {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  document.removeEventListener('pointerdown', unlock);
+}, { once: true });
+
+function popSound(pitch = 1) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  const t = audioCtx.currentTime;
+  osc.frequency.setValueAtTime(900 * pitch, t);
+  osc.frequency.exponentialRampToValueAtTime(150 * pitch, t + 0.12);
+  gain.gain.setValueAtTime(0.35, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+  osc.start(t); osc.stop(t + 0.2);
+}
+
+// ─── Bubble class ─────────────────────────────────────────────────
+const COLORS = [
+  '#ff6b6b','#ffd93d','#6bcb77','#4d96ff',
+  '#f7a072','#c77dff','#ff9ff3','#48dbfb',
+];
+
+class Bubble {
+  constructor() { this.reset(true); }
+
+  reset(fromBottom = false) {
+    this.r  = 28 + Math.random() * 52;           // radius 28–80
+    this.x  = this.r + Math.random() * (canvas.width  - this.r * 2);
+    this.y  = fromBottom
+              ? canvas.height + this.r + Math.random() * 200
+              : -this.r - Math.random() * canvas.height;
+    this.vy = -(0.5 + Math.random() * 0.9);      // upward speed
+    this.vx = (Math.random() - 0.5) * 0.5;       // gentle drift
+    this.wobble = Math.random() * Math.PI * 2;
+    this.wobbleSpeed = 0.015 + Math.random() * 0.02;
+    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    this.alpha = 0.55 + Math.random() * 0.3;
+    this.alive = true;
+  }
+
+  update() {
+    this.y += this.vy;
+    this.wobble += this.wobbleSpeed;
+    this.x += this.vx + Math.sin(this.wobble) * 0.4;
+    if (this.y < -this.r * 2) this.reset(true);
+  }
+
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.alpha;
+
+    // Main bubble fill
+    const grad = ctx.createRadialGradient(
+      this.x - this.r * 0.3, this.y - this.r * 0.3, this.r * 0.1,
+      this.x, this.y, this.r
+    );
+    grad.addColorStop(0, 'rgba(255,255,255,0.65)');
+    grad.addColorStop(0.4, this.color + '99');
+    grad.addColorStop(1, this.color + '33');
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Rim
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // Specular highlight
+    ctx.globalAlpha = this.alpha * 0.8;
+    ctx.beginPath();
+    ctx.arc(this.x - this.r * 0.3, this.y - this.r * 0.3, this.r * 0.22, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.75)';
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  contains(px, py) {
+    return Math.hypot(px - this.x, py - this.y) <= this.r;
+  }
+}
+
+// ─── Burst particles ──────────────────────────────────────────────
+class Particle {
+  constructor(x, y, color) {
+    this.x = x; this.y = y; this.color = color;
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 5;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.r  = 4 + Math.random() * 5;
+    this.life = 1;
+    this.decay = 0.04 + Math.random() * 0.04;
+  }
+  update() {
+    this.x += this.vx; this.y += this.vy;
+    this.vy += 0.15;   // gravity
+    this.life -= this.decay;
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, this.life);
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ─── State ────────────────────────────────────────────────────────
+const MAX_BUBBLES = 18;
+const bubbles    = Array.from({ length: 10 }, () => new Bubble());
+const particles  = [];
+
+// Spawn new bubbles over time
+setInterval(() => {
+  if (bubbles.length < MAX_BUBBLES) bubbles.push(new Bubble());
+}, 1200);
+
+// ─── Pop on touch/click ───────────────────────────────────────────
+function tryPop(px, py) {
+  // Find largest bubble under the finger first
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    const b = bubbles[i];
+    if (!b.alive) continue;
+    if (b.contains(px, py)) {
+      b.alive = false;
+      popSound(0.7 + Math.random() * 0.6);
+      SCORE.add();
+
+      // Spawn burst particles
+      for (let j = 0; j < 14; j++)
+        particles.push(new Particle(b.x, b.y, b.color));
+
+      // Remove and respawn after short delay
+      bubbles.splice(i, 1);
+      setTimeout(() => bubbles.push(new Bubble()), 800);
+      break;
+    }
+  }
+}
+
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  tryPop(e.clientX, e.clientY);
+});
+
+// ─── Game loop ────────────────────────────────────────────────────
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  bubbles.forEach(b => { b.update(); b.draw(); });
+
+  for (let i = particles.length - 1; i >= 0; i--) {
+    particles[i].update();
+    particles[i].draw();
+    if (particles[i].life <= 0) particles.splice(i, 1);
+  }
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+<!-- Fullscreen button -->
+<div id="fsbtn" style="position:fixed;bottom:22px;left:22px;width:64px;height:64px;z-index:999;cursor:pointer;opacity:0.35;transition:opacity 0.15s;touch-action:none;">
+  <svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+    <g stroke="white" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M18 26 L18 18 L26 18"/><path d="M38 18 L46 18 L46 26"/>
+      <path d="M46 38 L46 46 L38 46"/><path d="M26 46 L18 46 L18 38"/>
+    </g>
+  </svg>
+</div>
+<script>
+(function(){
+  const btn = document.getElementById('fsbtn');
+  function isFS() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function enterFS() { const el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(()=>{}); }
+  function exitFS()  { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+
+  if (sessionStorage.getItem('fs') === '1')
+    document.addEventListener('pointerdown', enterFS, { once: true, capture: true });
+
+  btn.addEventListener('pointerdown', function(e) {
+    e.stopPropagation(); btn.style.opacity = '1';
+    if (!isFS()) { enterFS(); sessionStorage.setItem('fs', '1'); }
+    else         { exitFS();  sessionStorage.removeItem('fs'); }
+    setTimeout(() => btn.style.opacity = '0.35', 300);
+  });
+})();
+</script>
+
+<!-- Home button & back-lock -->
+<div id="hbtn" style="position:fixed;bottom:22px;right:22px;width:64px;height:64px;z-index:999;cursor:pointer;opacity:0.35;transition:opacity 0.15s;touch-action:none;">
+  <svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+    <circle id="hring" cx="32" cy="32" r="23" fill="none" stroke="white" stroke-width="5"
+            stroke-dasharray="144" stroke-dashoffset="144" stroke-linecap="round"
+            transform="rotate(-90 32 32)"/>
+    <text x="32" y="40" text-anchor="middle" font-size="24" font-family="Arial">🏠</text>
+  </svg>
+</div>
+<script>
+(function(){
+  const btn  = document.getElementById('hbtn');
+  const ring = document.getElementById('hring');
+  const HOLD = 700;
+  let raf = null, start = null;
+  function tick() {
+    const p = Math.min((Date.now() - start) / HOLD, 1);
+    ring.style.strokeDashoffset = 144 * (1 - p);
+    if (p < 1) raf = requestAnimationFrame(tick);
+    else window.location.href = 'index.html';
+  }
+  function cancel() {
+    cancelAnimationFrame(raf); raf = null;
+    ring.style.strokeDashoffset = 144;
+    btn.style.opacity = '0.35';
+  }
+  btn.addEventListener('pointerdown', e => {
+    e.stopPropagation(); btn.setPointerCapture(e.pointerId);
+    btn.style.opacity = '1'; start = Date.now(); raf = requestAnimationFrame(tick);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => btn.addEventListener(ev, cancel));
+
+  // Block accidental back navigation
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', () => history.pushState(null, '', location.href));
+})();
+</script>
+</body>
+</html>

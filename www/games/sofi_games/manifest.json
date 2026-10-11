@@ -1,0 +1,10 @@
+{
+  "name": "משחקי סופי",
+  "short_name": "סופי",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#0d0d2b",
+  "theme_color": "#0d0d2b",
+  "orientation": "any",
+  "icons": []
+}

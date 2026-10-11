@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>ציור</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html,body { width:100%; height:100%; overflow:hidden; }
+
+    #bg {
+      position:fixed; inset:0;
+      transition: background 60s linear;
+      z-index:0;
+    }
+
+    canvas { position:fixed; inset:0; z-index:1; touch-action:none; }
+  </style>
+  <script>
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('touchmove', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+    document.addEventListener('touchstart', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+  </script>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="paint"></canvas>
+<canvas id="fx"></canvas>
+
+<script src="theme.js"></script>
+<script src="score.js"></script>
+<script>
+const SCORE = initScore('draw');
+
+// ─── Time theme ───────────────────────────────────────────────────
+const bg = document.getElementById('bg');
+function refreshTheme() { applyTimeTheme(bg); }
+refreshTheme();
+setInterval(refreshTheme, 60000);
+
+// ─── Canvas setup: paint layer (persistent) + fx layer (sparkles) ─
+const paint = document.getElementById('paint');
+const pctx  = paint.getContext('2d');
+const fx    = document.getElementById('fx');
+const fctx  = fx.getContext('2d');
+
+function resize() {
+  // Preserve drawing on resize
+  const snap = document.createElement('canvas');
+  snap.width = paint.width; snap.height = paint.height;
+  if (paint.width > 0) snap.getContext('2d').drawImage(paint, 0, 0);
+  paint.width = fx.width = window.innerWidth;
+  paint.height = fx.height = window.innerHeight;
+  if (snap.width > 0) pctx.drawImage(snap, 0, 0);
+  pctx.lineCap = 'round';
+  pctx.lineJoin = 'round';
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Soft drawing sound: one gentle tone per finger, pitch by Y ───
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function startTone() {
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'triangle';
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  gain.gain.setValueAtTime(0, audioCtx.currentTime);
+  gain.gain.linearRampToValueAtTime(0.07, audioCtx.currentTime + 0.05);
+  osc.start();
+  return { osc, gain };
+}
+
+function updateTone(tone, y) {
+  // Top of screen = high note, bottom = low. Pentatonic-ish glide.
+  const f = 220 + (1 - y / window.innerHeight) * 440;
+  tone.osc.frequency.setTargetAtTime(f, audioCtx.currentTime, 0.03);
+}
+
+function stopTone(tone) {
+  const t = audioCtx.currentTime;
+  tone.gain.gain.cancelScheduledValues(t);
+  tone.gain.gain.setTargetAtTime(0.0001, t, 0.06);
+  tone.osc.stop(t + 0.4);
+}
+
+// ─── Multi-touch crayon strokes (rainbow, thick, glowing) ─────────
+const pointers = new Map(); // pointerId → { x, y, hue, tone }
+
+function strokeStyle(hue) {
+  return 'hsl(' + hue + ', 90%, 62%)';
+}
+
+paint.style.zIndex = 1;
+fx.style.zIndex = 2;
+
+fx.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  fx.setPointerCapture(e.pointerId);
+  const hue = Math.random() * 360;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, hue, tone: startTone() });
+  SCORE.add();
+
+  // Dot on tap so even a single touch leaves a mark
+  pctx.save();
+  pctx.shadowColor = strokeStyle(hue);
+  pctx.shadowBlur = 18;
+  pctx.fillStyle = strokeStyle(hue);
+  pctx.beginPath();
+  pctx.arc(e.clientX, e.clientY, 11, 0, Math.PI * 2);
+  pctx.fill();
+  pctx.restore();
+  spawnSparkles(e.clientX, e.clientY, pointers.get(e.pointerId).hue);
+});
+
+fx.addEventListener('pointermove', e => {
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  e.preventDefault();
+
+  p.hue = (p.hue + 1.5) % 360;
+  pctx.save();
+  pctx.strokeStyle = strokeStyle(p.hue);
+  pctx.shadowColor = strokeStyle(p.hue);
+  pctx.shadowBlur = 18;
+  pctx.lineWidth = 22;
+  pctx.beginPath();
+  pctx.moveTo(p.x, p.y);
+  pctx.lineTo(e.clientX, e.clientY);
+  pctx.stroke();
+  pctx.restore();
+
+  if (Math.random() < 0.4) spawnSparkles(e.clientX, e.clientY, p.hue, 2);
+
+  updateTone(p.tone, e.clientY);
+  p.x = e.clientX; p.y = e.clientY;
+});
+
+function endPointer(e) {
+  const p = pointers.get(e.pointerId);
+  if (!p) return;
+  stopTone(p.tone);
+  pointers.delete(e.pointerId);
+}
+fx.addEventListener('pointerup', endPointer);
+fx.addEventListener('pointercancel', endPointer);
+
+// ─── Sparkles along the stroke ────────────────────────────────────
+const sparkles = [];
+
+function spawnSparkles(x, y, hue, count = 5) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 0.5 + Math.random() * 2;
+    sparkles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 0.5,
+      r: 1.5 + Math.random() * 3,
+      hue: hue + (Math.random() * 40 - 20),
+      life: 1,
+      decay: 0.02 + Math.random() * 0.03,
+    });
+  }
+}
+
+// ─── Slow auto-fade so screen never fills up ──────────────────────
+let fadeCounter = 0;
+
+function loop() {
+  // Fade paint layer very gently (~full fade over ~40s)
+  fadeCounter++;
+  if (fadeCounter % 6 === 0) {
+    pctx.save();
+    pctx.globalCompositeOperation = 'destination-out';
+    pctx.fillStyle = 'rgba(0,0,0,0.02)';
+    pctx.fillRect(0, 0, paint.width, paint.height);
+    pctx.restore();
+  }
+
+  // Sparkles on fx layer
+  fctx.clearRect(0, 0, fx.width, fx.height);
+  for (let i = sparkles.length - 1; i >= 0; i--) {
+    const s = sparkles[i];
+    s.x += s.vx; s.y += s.vy;
+    s.life -= s.decay;
+    if (s.life <= 0) { sparkles.splice(i, 1); continue; }
+    fctx.save();
+    fctx.globalAlpha = s.life;
+    fctx.fillStyle = 'hsl(' + s.hue + ', 100%, 80%)';
+    fctx.beginPath();
+    fctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    fctx.fill();
+    fctx.restore();
+  }
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+<!-- Fullscreen button -->
+<div id="fsbtn" style="position:fixed;bottom:22px;left:22px;width:64px;height:64px;z-index:999;cursor:pointer;opacity:0.35;transition:opacity 0.15s;touch-action:none;">
+  <svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+    <g stroke="white" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M18 26 L18 18 L26 18"/><path d="M38 18 L46 18 L46 26"/>
+      <path d="M46 38 L46 46 L38 46"/><path d="M26 46 L18 46 L18 38"/>
+    </g>
+  </svg>
+</div>
+<script>
+(function(){
+  const btn = document.getElementById('fsbtn');
+  function isFS() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function enterFS() { const el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(()=>{}); }
+  function exitFS()  { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+
+  if (sessionStorage.getItem('fs') === '1')
+    document.addEventListener('pointerdown', enterFS, { once: true, capture: true });
+
+  btn.addEventListener('pointerdown', function(e) {
+    e.stopPropagation(); btn.style.opacity = '1';
+    if (!isFS()) { enterFS(); sessionStorage.setItem('fs', '1'); }
+    else         { exitFS();  sessionStorage.removeItem('fs'); }
+    setTimeout(() => btn.style.opacity = '0.35', 300);
+  });
+})();
+</script>
+
+<!-- Home button & back-lock -->
+<div id="hbtn" style="position:fixed;bottom:22px;right:22px;width:64px;height:64px;z-index:999;cursor:pointer;opacity:0.35;transition:opacity 0.15s;touch-action:none;">
+  <svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+    <circle id="hring" cx="32" cy="32" r="23" fill="none" stroke="white" stroke-width="5"
+            stroke-dasharray="144" stroke-dashoffset="144" stroke-linecap="round"
+            transform="rotate(-90 32 32)"/>
+    <text x="32" y="40" text-anchor="middle" font-size="24" font-family="Arial">🏠</text>
+  </svg>
+</div>
+<script>
+(function(){
+  const btn  = document.getElementById('hbtn');
+  const ring = document.getElementById('hring');
+  const HOLD = 700;
+  let raf = null, start = null;
+  function tick() {
+    const p = Math.min((Date.now() - start) / HOLD, 1);
+    ring.style.strokeDashoffset = 144 * (1 - p);
+    if (p < 1) raf = requestAnimationFrame(tick);
+    else window.location.href = 'index.html';
+  }
+  function cancel() {
+    cancelAnimationFrame(raf); raf = null;
+    ring.style.strokeDashoffset = 144;
+    btn.style.opacity = '0.35';
+  }
+  btn.addEventListener('pointerdown', e => {
+    e.stopPropagation(); btn.setPointerCapture(e.pointerId);
+    btn.style.opacity = '1'; start = Date.now(); raf = requestAnimationFrame(tick);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => btn.addEventListener(ev, cancel));
+
+  // Block accidental back navigation
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', () => history.pushState(null, '', location.href));
+})();
+</script>
+</body>
+</html>

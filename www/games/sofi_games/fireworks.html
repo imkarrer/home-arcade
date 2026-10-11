@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>זיקוקים</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
+    html,body { width:100%; height:100%; overflow:hidden; }
+
+    #bg {
+      position:fixed; inset:0;
+      transition: background 60s linear;
+      z-index:0;
+    }
+
+    canvas { position:fixed; inset:0; z-index:1; touch-action:none; }
+  </style>
+  <script>
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+    document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+    document.addEventListener('touchmove', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+    document.addEventListener('touchstart', function(e){ if(e.touches.length>1) e.preventDefault(); }, { passive:false });
+  </script>
+</head>
+<body>
+<div id="bg"></div>
+<canvas id="c"></canvas>
+
+<script src="theme.js"></script>
+<script src="score.js"></script>
+<script>
+const SCORE = initScore('fireworks');
+
+// ─── Time theme ───────────────────────────────────────────────────
+const bg = document.getElementById('bg');
+function refreshTheme() { applyTimeTheme(bg); }
+refreshTheme();
+setInterval(refreshTheme, 60000);
+
+// ─── Canvas setup ─────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+
+function resize() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ─── Firework sound (Web Audio: boom + crackle) ───────────────────
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+function fireworkSound(pitch = 1) {
+  const t = audioCtx.currentTime;
+
+  // Low boom
+  const osc  = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(120 * pitch, t);
+  osc.frequency.exponentialRampToValueAtTime(45 * pitch, t + 0.35);
+  gain.gain.setValueAtTime(0.5, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  osc.start(t); osc.stop(t + 0.42);
+
+  // Crackle sparkles (short noise bursts)
+  const crackles = 5 + Math.floor(Math.random() * 4);
+  for (let i = 0; i < crackles; i++) {
+    const dt = t + 0.05 + Math.random() * 0.35;
+    const bufSize = audioCtx.sampleRate * 0.03;
+    const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let j = 0; j < bufSize; j++) data[j] = (Math.random() * 2 - 1) * (1 - j / bufSize);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    const bp = audioCtx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = 2500 + Math.random() * 3000;
+    const cgain = audioCtx.createGain();
+    cgain.gain.setValueAtTime(0.18, dt);
+    cgain.gain.exponentialRampToValueAtTime(0.001, dt + 0.08);
+    src.connect(bp); bp.connect(cgain); cgain.connect(audioCtx.destination);
+    src.start(dt);
+  }
+}
+
+// ─── Firework particle ─────────────────────────────────────────────
+const PALETTES = [
+  ['#ff6b6b','#ffd93d','#ff9ff3'],
+  ['#4d96ff','#48dbfb','#c77dff'],
+  ['#6bcb77','#ffd93d','#4d96ff'],
+  ['#f7a072','#ff6b6b','#c77dff'],
+  ['#ffd93d','#6bcb77','#48dbfb'],
+];
+
+class Spark {
+  constructor(x, y, color, speed) {
+    this.x = x; this.y = y;
+    const angle = Math.random() * Math.PI * 2;
+    this.vx = Math.cos(angle) * speed;
+    this.vy = Math.sin(angle) * speed;
+    this.color = color;
+    this.r = 2.5 + Math.random() * 2.5;
+    this.life = 1;
+    this.decay = 0.012 + Math.random() * 0.012;
+    this.trail = [];
+  }
+  update() {
+    this.trail.push({ x: this.x, y: this.y });
+    if (this.trail.length > 6) this.trail.shift();
+    this.x += this.vx; this.y += this.vy;
+    this.vy += 0.045; // gravity
+    this.vx *= 0.985; this.vy *= 0.985;
+    this.life -= this.decay;
+  }
+  draw() {
+    ctx.save();
+    for (let i = 0; i < this.trail.length; i++) {
+      const p = this.trail[i];
+      ctx.globalAlpha = Math.max(0, this.life) * (i / this.trail.length) * 0.5;
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, this.r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = Math.max(0, this.life);
+    ctx.fillStyle = this.color;
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+const sparks = [];
+
+function burst(x, y) {
+  SCORE.add();
+  const palette = PALETTES[Math.floor(Math.random() * PALETTES.length)];
+  const count = 45 + Math.floor(Math.random() * 20);
+  for (let i = 0; i < count; i++) {
+    const color = palette[Math.floor(Math.random() * palette.length)];
+    const speed = 2 + Math.random() * 5;
+    sparks.push(new Spark(x, y, color, speed));
+  }
+  fireworkSound(0.8 + Math.random() * 0.5);
+
+  // Central flash ring
+  sparks.flashX = x; sparks.flashY = y;
+  flashes.push({ x, y, r: 4, alpha: 1 });
+}
+
+const flashes = [];
+
+// ─── Tap anywhere → burst (multi-touch friendly) ──────────────────
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  burst(e.clientX, e.clientY);
+});
+
+// ─── Game loop ────────────────────────────────────────────────────
+function loop() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = flashes.length - 1; i >= 0; i--) {
+    const f = flashes[i];
+    ctx.save();
+    ctx.globalAlpha = f.alpha;
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    f.r += 6; f.alpha -= 0.12;
+    if (f.alpha <= 0) flashes.splice(i, 1);
+  }
+
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    sparks[i].update();
+    sparks[i].draw();
+    if (sparks[i].life <= 0) sparks.splice(i, 1);
+  }
+
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+
+<!-- Fullscreen button -->
+<div id="fsbtn" style="position:fixed;bottom:22px;left:22px;width:64px;height:64px;z-index:999;cursor:pointer;opacity:0.35;transition:opacity 0.15s;touch-action:none;">
+  <svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+    <g stroke="white" stroke-width="3" stroke-linecap="round" fill="none">
+      <path d="M18 26 L18 18 L26 18"/><path d="M38 18 L46 18 L46 26"/>
+      <path d="M46 38 L46 46 L38 46"/><path d="M26 46 L18 46 L18 38"/>
+    </g>
+  </svg>
+</div>
+<script>
+(function(){
+  const btn = document.getElementById('fsbtn');
+  function isFS() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function enterFS() { const el = document.documentElement; (el.requestFullscreen || el.webkitRequestFullscreen).call(el).catch(()=>{}); }
+  function exitFS()  { (document.exitFullscreen || document.webkitExitFullscreen).call(document); }
+
+  if (sessionStorage.getItem('fs') === '1')
+    document.addEventListener('pointerdown', enterFS, { once: true, capture: true });
+
+  btn.addEventListener('pointerdown', function(e) {
+    e.stopPropagation(); btn.style.opacity = '1';
+    if (!isFS()) { enterFS(); sessionStorage.setItem('fs', '1'); }
+    else         { exitFS();  sessionStorage.removeItem('fs'); }
+    setTimeout(() => btn.style.opacity = '0.35', 300);
+  });
+})();
+</script>
+
+<!-- Home button & back-lock -->
+<div id="hbtn" style="position:fixed;bottom:22px;right:22px;width:64px;height:64px;z-index:999;cursor:pointer;opacity:0.35;transition:opacity 0.15s;touch-action:none;">
+  <svg viewBox="0 0 64 64" width="64" height="64">
+    <circle cx="32" cy="32" r="28" fill="rgba(0,0,0,0.5)" stroke="rgba(255,255,255,0.5)" stroke-width="2"/>
+    <circle id="hring" cx="32" cy="32" r="23" fill="none" stroke="white" stroke-width="5"
+            stroke-dasharray="144" stroke-dashoffset="144" stroke-linecap="round"
+            transform="rotate(-90 32 32)"/>
+    <text x="32" y="40" text-anchor="middle" font-size="24" font-family="Arial">🏠</text>
+  </svg>
+</div>
+<script>
+(function(){
+  const btn  = document.getElementById('hbtn');
+  const ring = document.getElementById('hring');
+  const HOLD = 700;
+  let raf = null, start = null;
+  function tick() {
+    const p = Math.min((Date.now() - start) / HOLD, 1);
+    ring.style.strokeDashoffset = 144 * (1 - p);
+    if (p < 1) raf = requestAnimationFrame(tick);
+    else window.location.href = 'index.html';
+  }
+  function cancel() {
+    cancelAnimationFrame(raf); raf = null;
+    ring.style.strokeDashoffset = 144;
+    btn.style.opacity = '0.35';
+  }
+  btn.addEventListener('pointerdown', e => {
+    e.stopPropagation(); btn.setPointerCapture(e.pointerId);
+    btn.style.opacity = '1'; start = Date.now(); raf = requestAnimationFrame(tick);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(ev => btn.addEventListener(ev, cancel));
+
+  // Block accidental back navigation
+  history.pushState(null, '', location.href);
+  window.addEventListener('popstate', () => history.pushState(null, '', location.href));
+})();
+</script>
+</body>
+</html>

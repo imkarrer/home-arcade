@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shape Sorter</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23163a52'/%3E%3Ccircle cx='32' cy='34' r='16' fill='%23ef476f'/%3E%3Crect x='54' y='20' width='28' height='28' rx='4' fill='%23ffd166'/%3E%3Cpath d='M50 56l20 30H30z' fill='%2306d6a0'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap">
+<style>
+:root{--bg:#e6eef4;--ink:#14303f;--panel:#fff;--track:#cfdbe4;--board:#d9a56b;--hole:#7a4e24;--edge:#51330f;--accent:#1d6fa5;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--sz:80px;--gap:12px;--trayh:120px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1b25;--ink:#e6eef4;--panel:#1a2b38;--track:#27404f;--board:#8a5a2b;--hole:#3b2411;--edge:#1f1206;--accent:#5bb3e8}}
+:root[data-theme="dark"]{--bg:#0f1b25;--ink:#e6eef4;--panel:#1a2b38;--track:#27404f;--board:#8a5a2b;--hole:#3b2411;--edge:#1f1206;--accent:#5bb3e8}
+*{box-sizing:border-box}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Fredoka",ui-rounded,"Trebuchet MS",system-ui,sans-serif;overflow-x:hidden;-webkit-tap-highlight-color:transparent}
+#app{max-width:1000px;margin:0 auto;padding:12px 14px 24px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:1.7rem;font-weight:600;letter-spacing:.01em}
+.sub{margin:0;opacity:.7;font-size:.95rem}
+button{font:inherit;color:inherit;cursor:pointer}
+#gear{width:44px;height:44px;border-radius:50%;border:0;background:var(--panel);display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.15)}
+#gear svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .4s}
+#gear:hover svg{transform:rotate(60deg)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.gauge{background:var(--panel);border-radius:18px;padding:12px 14px;position:relative}
+.gtop{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+#val{font-size:1.5rem;font-weight:600}
+#val small{font-size:.9rem;opacity:.6}
+.track{height:24px;border-radius:12px;background:var(--track);overflow:hidden}
+#fill{height:100%;width:1%;border-radius:12px;transition:width .4s ease,background .4s}
+#delta{position:absolute;right:16px;top:-4px;font-weight:600;font-size:1.2rem;opacity:0;pointer-events:none}
+#delta.go{animation:rise .9s ease-out}
+@keyframes rise{0%{opacity:1;transform:translateY(8px)}100%{opacity:0;transform:translateY(-14px)}}
+.gauge.hit{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+#board{background:var(--board);border-radius:22px;padding:16px;display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:var(--gap);box-shadow:inset 0 4px 10px rgba(0,0,0,.25)}
+.hole{width:var(--sz);height:var(--sz)}
+svg{display:block;width:100%;height:100%;overflow:visible}
+.hole svg *{fill:var(--hole);stroke:var(--edge);stroke-width:4;stroke-linejoin:round;transition:fill .2s}
+.hole.near svg *{stroke:#fff;stroke-width:6}
+.hole.bad svg *{stroke:#ff4d4d;stroke-width:7}
+.hole.bad{animation:shake .35s}
+.hole.filled svg *{fill:var(--c);stroke:rgba(0,0,0,.3);stroke-width:3}
+.hole.pop{animation:pop .35s}
+@keyframes pop{50%{transform:scale(1.15)}}
+#tray{background:var(--panel);border-radius:22px;padding:16px;min-height:var(--trayh);display:flex;flex-wrap:wrap;justify-content:center;align-content:center;gap:var(--gap);border:3px dashed var(--track)}
+.piece{width:var(--sz);height:var(--sz);position:relative;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;filter:drop-shadow(0 4px 3px rgba(0,0,0,.3))}
+.piece svg *{fill:var(--c);stroke:rgba(0,0,0,.3);stroke-width:3;stroke-linejoin:round}
+.piece.drag{z-index:20;cursor:grabbing;filter:drop-shadow(0 12px 8px rgba(0,0,0,.35))}
+.ov{position:fixed;inset:0;background:rgba(5,15,22,.6);display:grid;place-items:center;padding:16px;z-index:50}
+.ov[hidden]{display:none}
+.card{background:var(--panel);border-radius:22px;padding:22px;width:min(420px,100%);max-height:90%;overflow:auto;position:relative}
+.card h2{margin:0 0 12px;font-size:1.5rem}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--track)}
+.row label{flex:1}
+.row small{display:block;opacity:.65}
+.seg{display:flex;border-radius:12px;overflow:hidden;border:2px solid var(--track)}
+.seg button{border:0;background:none;padding:8px 12px;min-width:42px}
+.seg button.on{background:var(--accent);color:#fff}
+input[type=checkbox]{width:26px;height:26px;accent-color:var(--accent)}
+.btn{border:0;background:var(--accent);color:#fff;border-radius:14px;padding:12px 18px;font-weight:600;margin-top:12px;width:100%}
+.btn.alt{background:var(--track);color:var(--ink)}
+.credit{margin:14px 0 0;text-align:center;font-size:.75rem;opacity:.55}
+.credit a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+.credit a:hover{opacity:.8}
+#end .card{text-align:center}
+#end .big{font-size:3rem;margin:0}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><h1>Shape Sorter</h1><p class="sub">Drag each shape into its matching hole.</p></div>
+    <button id="gear" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg></button>
+  </header>
+  <section class="gauge" id="gauge" aria-label="Score gauge">
+    <div class="gtop"><span>Score gauge</span><span id="val"></span></div>
+    <div class="track" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="bar"><div id="fill"></div></div>
+    <span id="delta"></span>
+  </section>
+  <div id="board"></div>
+  <div id="tray"></div>
+</div>
+
+<div class="ov" id="set" hidden>
+  <div class="card" role="dialog" aria-label="Settings">
+    <h2>Settings</h2>
+    <div class="row"><label>Points per correct match<small>A wrong match always costs 1.</small></label><div class="seg" data-k="pts"><button data-v="1">1</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
+    <div class="row"><label>Shapes per round<small>Applies from the next round.</small></label><div class="seg" data-k="n"><button data-v="4">4</button><button data-v="6">6</button><button data-v="8">8</button></div></div>
+    <div class="row"><label>Theme</label><div class="seg" data-k="theme"><button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+    <div class="row"><label for="say">Call out shape names<small>Speaks the name when you pick a shape up.</small></label><input type="checkbox" id="say"></div>
+    <div class="row"><label for="snd">Sound</label><input type="checkbox" id="snd"></div>
+    <div class="row"><label for="vib">Vibrate on mistakes</label><input type="checkbox" id="vib"></div>
+    <div class="row"><label for="hint">Highlight hole while dragging</label><input type="checkbox" id="hint"></div>
+    <button class="btn alt" id="restart">Restart game</button>
+    <button class="btn" id="close">Done</button>
+    <p class="credit">Made with ❤️ by <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener noreferrer">KungPowUnicorn</a></p>
+  </div>
+</div>
+
+<div class="ov" id="end" hidden>
+  <div class="card"><p class="big" id="eIcon"></p><h2 id="eTitle"></h2><p id="eMsg"></p><button class="btn" id="again">Play again</button></div>
+</div>
+
+<script>
+const SH={
+circle:'<circle cx="50" cy="50" r="40"/>',
+square:'<rect x="12" y="12" width="76" height="76" rx="8"/>',
+triangle:'<polygon points="50,10 92,86 8,86"/>',
+star:'<polygon points="50,6 62,37 95,38 69,58 78,90 50,71 22,90 31,58 5,38 38,37"/>',
+hexagon:'<polygon points="50,8 88,29 88,71 50,92 12,71 12,29"/>',
+diamond:'<polygon points="50,6 92,50 50,94 8,50"/>',
+heart:'<path d="M50 88C10 58 6 34 24 22c12-8 22-2 26 8 4-10 14-16 26-8 18 12 14 36-26 66z"/>',
+cross:'<polygon points="36,8 64,8 64,36 92,36 92,64 64,64 64,92 36,92 36,64 8,64 8,36 36,36"/>'};
+const COL={circle:'#ef476f',square:'#ffc233',triangle:'#06c28f',star:'#ff8a1f',hexagon:'#3db8e8',diamond:'#9b5de5',heart:'#f15bb5',cross:'#2ec4b6'};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+let S={pts:5,n:4,theme:'auto',snd:true,say:true,vib:true,hint:true};
+try{Object.assign(S,JSON.parse(localStorage.getItem('shapesorter')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('shapesorter',JSON.stringify(S))}catch(e){}};
+let score=1,over=false,left=0,drag=null,ac=null;
+function say(t){if(!S.say||!window.speechSynthesis)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=.95;u.pitch=1.1;speechSynthesis.speak(u)}catch(e){}}
+const NAME={cross:'plus'};
+const svg=k=>`<svg viewBox="0 0 100 100" aria-hidden="true">${SH[k]}</svg>`;
+const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function tone(f,d=.12,t='sine'){if(!S.snd)return;try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();const o=ac.createOscillator(),g=ac.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(.08,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g);g.connect(ac.destination);o.start();o.stop(ac.currentTime+d)}catch(e){}}
+
+function round(){
+  const ks=shuffle(Object.keys(SH)).slice(0,S.n);left=ks.length;
+  $('#board').innerHTML='';$('#tray').innerHTML='';
+  shuffle(ks.slice()).forEach(k=>{const h=document.createElement('div');h.className='hole';h.dataset.k=k;h.style.setProperty('--c',COL[k]);h.innerHTML=svg(k);$('#board').append(h)});
+  shuffle(ks.slice()).forEach(k=>{const p=document.createElement('div');p.className='piece';p.dataset.k=k;p.style.setProperty('--c',COL[k]);p.setAttribute('role','img');p.setAttribute('aria-label',k);p.innerHTML=svg(k);$('#tray').append(p)});cnt=ks.length;fit();
+}
+let cnt=S.n;
+function fit(){
+  const cs=getComputedStyle(document.documentElement),
+  safe=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0),
+  inner=$('#app').clientWidth-28-38,
+  avail=innerHeight-safe-36-$('header').offsetHeight-$('#gauge').offsetHeight-42-70;
+  const lay=t=>{const g=Math.round(t*.16),cols=Math.max(1,Math.floor((inner+g)/(t+g))),rows=Math.ceil(cnt/cols);return{g,h:rows*t+(rows-1)*g}};
+  let s=44;
+  for(let t=150;t>=44;t-=2){if(t<=inner&&2*lay(t).h<=avail){s=t;break}}
+  const L=lay(s),r=document.documentElement.style;
+  r.setProperty('--sz',s+'px');r.setProperty('--gap',L.g+'px');r.setProperty('--trayh',(L.h+38)+'px');
+}
+function render(){
+  $('#val').innerHTML=score+' <small>/ 100</small>';
+  const f=$('#fill');f.style.width=score+'%';f.style.background=`hsl(${score*1.2},70%,48%)`;
+  $('#bar').setAttribute('aria-valuenow',score);
+}
+function add(n){
+  score=Math.max(0,Math.min(100,score+n));render();
+  const d=$('#delta');d.textContent=(n>0?'+':'\u2212')+Math.abs(n);d.style.color=n>0?'#06a77d':'#e5484d';d.classList.remove('go');void d.offsetWidth;d.classList.add('go');
+  if(n<0){const g=$('#gauge');g.classList.remove('hit');void g.offsetWidth;g.classList.add('hit');if(S.vib&&navigator.vibrate)navigator.vibrate(60)}
+  if(score>=100)finish(true);else if(score<=0)finish(false);
+}
+function finish(win){
+  over=true;$('#eIcon').textContent=win?'\ud83c\udfc6':'\ud83d\udca5';
+  $('#eTitle').textContent=win?'You win!':'Game over';
+  $('#eMsg').textContent=win?'The gauge reached 100.':'The gauge dropped to 0.';
+  tone(win?880:140,.5,win?'sine':'sawtooth');setTimeout(()=>$('#end').hidden=false,450);
+}
+function nearest(p){
+  const r=p.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;let best=null,bd=1e9;
+  $$('.hole:not(.filled)').forEach(h=>{const q=h.getBoundingClientRect(),d=Math.hypot(cx-(q.left+q.width/2),cy-(q.top+q.height/2));if(d<q.width*.6&&d<bd){bd=d;best=h}});
+  return best;
+}
+const back=p=>{p.style.transition='transform .28s cubic-bezier(.3,1.5,.5,1)';p.style.transform=''};
+$('#tray').addEventListener('pointerdown',e=>{
+  const p=e.target.closest('.piece');if(!p||over||drag)return;
+  e.preventDefault();p.setPointerCapture(e.pointerId);
+  drag={p,x:e.clientX,y:e.clientY,id:e.pointerId};p.classList.add('drag');p.style.transition='none';tone(440,.05);say(NAME[p.dataset.k]||p.dataset.k);
+});
+addEventListener('pointermove',e=>{
+  if(!drag||e.pointerId!==drag.id)return;
+  drag.p.style.transform=`translate(${e.clientX-drag.x}px,${e.clientY-drag.y}px) scale(1.12)`;
+  if(S.hint){const h=nearest(drag.p);$$('.hole.near').forEach(x=>x!==h&&x.classList.remove('near'));if(h)h.classList.add('near')}
+});
+function drop(e){
+  if(!drag||e.pointerId!==drag.id)return;
+  const p=drag.p;drag=null;$$('.hole.near').forEach(x=>x.classList.remove('near'));
+  const h=e.type==='pointercancel'?null:nearest(p);p.classList.remove('drag');
+  if(!h){back(p);return}
+  if(h.dataset.k===p.dataset.k){
+    h.classList.add('filled','pop');p.remove();left--;say('Great!');tone(660,.1);setTimeout(()=>tone(880,.15),90);add(S.pts);
+    if(!over&&!left)setTimeout(()=>{if(!over)round()},700);
+  }else{
+    h.classList.add('bad');setTimeout(()=>h.classList.remove('bad'),400);back(p);tone(150,.25,'square');say('Try again');add(-1);
+  }
+}
+addEventListener('pointerup',drop);addEventListener('pointercancel',drop);
+
+function theme(){if(S.theme==='auto')document.documentElement.removeAttribute('data-theme');else document.documentElement.setAttribute('data-theme',S.theme)}
+function sync(){
+  $$('.seg').forEach(s=>$$('#set .seg[data-k="'+s.dataset.k+'"] button').forEach(b=>b.classList.toggle('on',b.dataset.v==String(S[s.dataset.k]))));
+  ['snd','say','vib','hint'].forEach(k=>$('#'+k).checked=S[k]);theme();
+}
+$$('.seg button').forEach(b=>b.onclick=()=>{const k=b.parentNode.dataset.k;S[k]=isNaN(b.dataset.v)?b.dataset.v:+b.dataset.v;save();sync()});
+['snd','say','vib','hint'].forEach(k=>$('#'+k).onchange=e=>{S[k]=e.target.checked;save()});
+const reset=()=>{score=1;over=false;$('#end').hidden=true;$('#set').hidden=true;render();round()};
+$('#gear').onclick=()=>$('#set').hidden=false;
+$('#close').onclick=()=>$('#set').hidden=true;
+$('#set').onclick=e=>{if(e.target.id==='set')e.target.hidden=true};
+addEventListener('keydown',e=>{if(e.key==='Escape')$('#set').hidden=true});
+$('#restart').onclick=reset;$('#again').onclick=reset;
+sync();render();round();
+addEventListener('resize',fit);addEventListener('orientationchange',()=>setTimeout(fit,200));
+if(window.visualViewport)visualViewport.addEventListener('resize',fit);
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fit);
+</script>
+</body>
+</html>

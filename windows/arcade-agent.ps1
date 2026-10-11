@@ -24,7 +24,17 @@ function Send-File($res, [string]$path) {
         ".css"  = "text/css; charset=utf-8"
         ".svg"  = "image/svg+xml"
         ".png"  = "image/png"
+        ".gif"  = "image/gif"
+        ".jpg"  = "image/jpeg"
+        ".jpeg" = "image/jpeg"
+        ".webp" = "image/webp"
+        ".ico"  = "image/x-icon"
         ".json" = "application/json"
+        ".webmanifest" = "application/manifest+json"
+        ".mp3"  = "audio/mpeg"
+        ".ogg"  = "audio/ogg"
+        ".wav"  = "audio/wav"
+        ".md"   = "text/plain; charset=utf-8"
     }
     $res.ContentType = $(if ($types.ContainsKey($ext)) { $types[$ext] } else { "application/octet-stream" })
     $bytes = [IO.File]::ReadAllBytes($path)
@@ -66,6 +76,7 @@ while ($listen.IsListening) {
         if ($path -eq "/api/games") {
             Send-Json $res @{
                 games     = @(Get-ArcadeCatalog)
+                shelves   = @(Get-ArcadeShelves)
                 joinHost  = $script:joinDefault
                 splitView = $script:splitView
             }
@@ -108,10 +119,22 @@ while ($listen.IsListening) {
             Send-Json $res @{ ok = $true }
             continue
         }
-        $rel = $path.TrimStart("/").Replace("/", [IO.Path]::DirectorySeparatorChar)
+        # www\ is the kid UI and, under games\, the web games it opens. Their
+        # paths arrive escaped ("Color%20Monster.html") and must stay inside
+        # www\. A game file that is not there is a 404, not the kid UI.
+        $sep = [IO.Path]::DirectorySeparatorChar
+        $rel = [Uri]::UnescapeDataString($path).TrimStart("/").Replace("/", $sep)
         if (-not $rel) { $rel = "index.html" }
-        $file = Join-Path $www $rel
-        if (-not (Test-Path $file) -or (Get-Item $file).PSIsContainer) {
+        $wwwFull = [IO.Path]::GetFullPath($www)
+        $file = [IO.Path]::GetFullPath((Join-Path $wwwFull $rel))
+        if (-not $file.StartsWith($wwwFull + $sep, [StringComparison]::OrdinalIgnoreCase)) { $file = $null }
+        elseif (Test-Path -LiteralPath $file -PathType Container) { $file = Join-Path $file "index.html" }
+        if (-not $file -or -not (Test-Path -LiteralPath $file -PathType Leaf)) {
+            if ($rel.StartsWith("games" + $sep)) {
+                $res.StatusCode = 404
+                $res.Close()
+                continue
+            }
             $file = Join-Path $www "index.html"
         }
         if (-not (Test-Path $file)) { throw "UI files missing. Copy www into this arcade folder." }

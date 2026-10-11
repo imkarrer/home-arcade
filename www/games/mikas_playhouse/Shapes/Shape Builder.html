@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Shape Builder</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧩%3C/text%3E%3C/svg%3E">
+<style>
+:root{--bg:#f4f1ff;--card:#fff;--tx:#2b2540;--mut:#7a7390;--ghost:#b9b2d6;--line:#ddd8ee;--acc:#7c4dff;color-scheme:light}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17142a;--card:#241f3d;--tx:#f0ecff;--mut:#a39cc4;--ghost:#5b5486;--line:#3a3463;--acc:#a58bff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17142a;--card:#241f3d;--tx:#f0ecff;--mut:#a39cc4;--ghost:#5b5486;--line:#3a3463;--acc:#a58bff;color-scheme:dark}
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--bg)}
+*{box-sizing:border-box}
+body{height:100%;margin:0 auto;max-width:560px;display:flex;flex-direction:column;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent;overflow:hidden}
+[hidden]{display:none!important}
+header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px}
+h1{font-size:20px;margin:0}
+button{font-family:inherit;color:inherit;cursor:pointer}
+#gear{width:44px;height:44px;border-radius:50%;border:0;background:var(--card);font-size:22px;line-height:1}
+.gauge{position:relative;height:28px;margin:0 14px;border-radius:14px;background:var(--line);overflow:hidden}
+#fill{height:100%;width:1%;border-radius:14px;transition:width .4s,background .4s}
+#gnum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#222;text-shadow:0 0 4px #fff}
+.stage{position:relative;flex:1;min-height:0;margin:10px 14px;background:var(--card);border-radius:18px;padding:8px}
+.stage svg{width:100%;height:100%;display:block}
+#fname{position:absolute;top:8px;left:12px;font-size:12px;color:var(--mut);font-weight:700}
+#toast{position:absolute;left:10px;right:10px;bottom:10px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:20px;font-weight:800;text-align:center;background:var(--acc);color:#fff;border-radius:16px;padding:10px 14px;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+#toast small{font-size:13px;font-weight:600;opacity:.9}
+.prompt{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 14px 8px;font-size:20px;font-weight:700}
+#say{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--card);font-size:20px;flex:none}
+.tray{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:0 14px 14px}
+.opt{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:6px 2px;font:600 11px system-ui;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:76px;min-width:0}
+.opt svg{width:100%;max-width:56px;aspect-ratio:1}
+.opt:active{transform:scale(.94)}
+.shake{animation:sh .35s}
+@keyframes sh{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pop{animation:pop .45s ease-out;transform-box:fill-box;transform-origin:center}
+@keyframes pop{0%{transform:scale(.2);opacity:0}70%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+.tgt{stroke:var(--acc);stroke-width:2.5;animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.3}}
+.ov{position:fixed;inset:0;background:rgba(10,8,25,.65);display:flex;align-items:center;justify-content:center;padding:16px;z-index:10}
+.box{background:var(--card);border-radius:20px;padding:20px;max-width:380px;width:100%;max-height:92%;overflow:auto;text-align:center}
+.box h2{margin:0 0 8px}
+.box p{color:var(--mut);line-height:1.4;margin:6px 0}
+.btn{border:0;background:var(--acc);color:#fff;font-size:18px;font-weight:700;padding:12px 28px;border-radius:14px;margin-top:12px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);text-align:left;font-size:15px}
+.row input{width:22px;height:22px;accent-color:var(--acc)}
+.seg{display:flex;gap:4px}
+.seg button{border:1px solid var(--line);background:none;padding:6px 10px;border-radius:10px;font-size:13px;font-weight:600}
+.seg button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.note{font-size:12px;color:var(--mut);text-align:left;margin:8px 0 0}
+.credit{margin-top:16px;font-size:11px;color:var(--mut);opacity:.8}
+.credit a{color:inherit}
+</style>
+</head>
+<body>
+<header><h1>🧩 Shape Builder</h1><button id="gear" aria-label="Settings">⚙️</button></header>
+<div class="gauge" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="fill"></div><div id="gnum">1 / 100</div></div>
+<div class="stage"><div id="fname"></div><svg id="stage" viewBox="0 0 200 190"></svg><div id="toast" hidden><span id="ttxt"></span><small>Tap anywhere to continue</small></div></div>
+<div class="prompt"><span id="ptxt">&nbsp;</span><button id="say" aria-label="Repeat">🔊</button></div>
+<div class="tray" id="tray"></div>
+
+<div class="ov" id="start"><div class="box"><h2>🧩 Shape Builder</h2>
+<p>Listen for the color and shape, then tap the matching piece to build a house, robot, cat and more!</p>
+<p>Right pick fills the gauge. Wrong pick: −1. Reach <b>100</b> to win. Hit <b>0</b> and it's game over.</p>
+<button class="btn" id="play">Play</button></div></div>
+
+<div class="ov" id="end" hidden><div class="box"><h2 id="etitle"></h2><p id="etext"></p><button class="btn" id="again">Play again</button></div></div>
+
+<div class="ov" id="set" hidden><div class="box"><h2>Settings</h2>
+<label class="row">Sound effects <input type="checkbox" data-k="fx"></label>
+<label class="row">Speak colors &amp; shapes <input type="checkbox" data-k="voice"></label>
+<label class="row">Highlight target spot <input type="checkbox" data-k="hints"></label>
+<label class="row">Show names on pieces <input type="checkbox" data-k="labels"></label>
+<div class="row">Points per correct pick<div class="seg" data-k="pts"><button data-v="1">1</button><button data-v="5">5</button><button data-v="10">10</button><button data-v="20">20</button></div></div>
+<div class="row">Voice speed<div class="seg" data-k="rate"><button data-v="0.8">Slow</button><button data-v="1">Normal</button><button data-v="1.2">Fast</button></div></div>
+<div class="row">Theme<div class="seg" data-k="theme"><button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+<p class="note">Wrong picks always cost 1 point.</p>
+<button class="btn" id="restart" style="font-size:15px;padding:10px 20px">Restart game</button>
+<button class="btn" id="close" style="font-size:15px;padding:10px 20px;background:var(--line);color:var(--tx)">Close</button>
+<div class="credit">Made With ❤️ By <a href="https://ko-fi.com/kungpowunicorn" target="_blank" rel="noopener">KungPowUnicorn</a></div>
+</div></div>
+
+<script>
+const COL={red:'#e53935',blue:'#1e88e5',green:'#43a047',yellow:'#fdd835',orange:'#fb8c00',purple:'#8e24aa',pink:'#ec407a',brown:'#795548',gray:'#78909c',white:'#fafafa',black:'#263238'};
+const SH=['square','rectangle','circle','triangle'];
+// part: [shape,color,x,y,w,h,rotation]
+const FIGS=[
+{n:'House',p:[['square','yellow',65,100,70,70],['triangle','red',55,60,90,42],['rectangle','brown',92,130,16,40],['square','blue',72,110,16,16],['square','blue',112,110,16,16]]},
+{n:'Robot',p:[['rectangle','gray',70,28,60,45],['triangle','red',94,10,12,18],['circle','yellow',80,40,12,12],['circle','yellow',108,40,12,12],['rectangle','blue',62,76,76,60],['square','red',94,96,12,12],['rectangle','orange',42,80,16,50],['rectangle','orange',142,80,16,50],['rectangle','green',72,138,20,38],['rectangle','green',108,138,20,38]]},
+{n:'Cat',p:[['circle','orange',50,92,100,78],['circle','orange',68,38,64,58],['triangle','orange',70,18,24,28],['triangle','orange',106,18,24,28],['circle','green',84,58,12,12],['circle','green',104,58,12,12],['triangle','pink',95,74,10,8],['rectangle','brown',148,118,34,10]]},
+{n:'Rocket',p:[['rectangle','purple',75,55,50,85],['triangle','red',75,22,50,34],['circle','blue',88,72,24,24],['triangle','red',50,112,26,32],['triangle','red',124,112,26,32],['triangle','orange',88,140,24,32,180]]},
+{n:'Car',p:[['rectangle','red',30,100,140,40],['rectangle','blue',68,68,64,34],['circle','gray',48,125,34,34],['circle','gray',118,125,34,34],['circle','yellow',156,106,12,12]]},
+{n:'Snowman',p:[['circle','white',60,110,80,75],['circle','white',72,70,56,50],['circle','white',82,38,36,36],['rectangle','brown',78,35,44,5],['rectangle','brown',86,18,28,18],['circle','blue',91,48,6,6],['circle','blue',104,48,6,6],['triangle','orange',97,56,6,12],['circle','red',96,80,8,8],['circle','red',96,96,8,8]]},
+{n:'Fish',p:[['circle','orange',50,70,90,60],['triangle','red',135,80,40,40,270],['triangle','red',85,50,30,25],['circle','blue',65,88,10,10],['circle','blue',28,62,8,8],['circle','blue',20,44,6,6]]},
+{n:'Tree',p:[['rectangle','brown',90,120,20,60],['circle','green',55,45,90,85],['circle','red',80,80,10,10],['circle','red',112,95,10,10],['circle','yellow',155,12,30,30]]},
+{n:'Butterfly',p:[['circle','purple',50,45,50,50],['circle','purple',100,45,50,50],['circle','pink',60,98,40,40],['circle','pink',100,98,40,40],['rectangle','brown',96,60,8,75],['circle','brown',93,46,14,14]]},
+{n:'Duck',p:[['circle','yellow',45,92,100,70],['circle','yellow',110,48,48,48],['triangle','orange',154,66,14,14,90],['circle','blue',134,64,8,8],['circle','orange',65,108,45,32],['rectangle','orange',80,160,6,18],['rectangle','orange',108,160,6,18]]},
+{n:'Castle',p:[['rectangle','gray',50,90,100,80],['rectangle','gray',32,60,32,110],['rectangle','gray',136,60,32,110],['triangle','red',28,32,40,30],['triangle','red',132,32,40,30],['rectangle','brown',88,125,24,45],['square','blue',74,100,12,12],['square','blue',114,100,12,12]]},
+{n:'Sailboat',p:[['rectangle','brown',35,142,130,24],['rectangle','brown',98,40,5,102],['triangle','blue',45,62,52,78],['triangle','red',106,50,50,90],['circle','yellow',150,8,30,30]]},
+{n:'Train',p:[['rectangle','blue',28,90,92,50],['rectangle','red',92,62,32,30],['rectangle','gray',40,64,16,26],['circle','gray',36,46,16,16],['rectangle','green',126,100,50,40],['circle','black',38,134,28,28],['circle','black',80,134,28,28],['circle','black',138,134,28,28]]},
+{n:'Ice Cream',p:[['triangle','brown',70,100,60,80,180],['circle','pink',62,62,76,50],['circle','yellow',74,34,52,42],['circle','red',92,18,16,16]]},
+{n:'Dog',p:[['rectangle','brown',50,95,90,45],['rectangle','brown',125,55,45,45],['rectangle','orange',160,52,10,30],['rectangle','brown',55,138,14,35],['rectangle','brown',120,138,14,35],['circle','black',148,68,8,8],['circle','black',162,84,12,12],['rectangle','brown',30,90,24,8,-30]]},
+{n:'Penguin',p:[['circle','black',65,48,70,118],['circle','white',80,88,40,70],['circle','white',78,66,16,16],['circle','white',106,66,16,16],['triangle','orange',92,82,16,12,180],['triangle','black',44,95,25,50],['triangle','black',131,95,25,50],['rectangle','orange',72,164,22,8],['rectangle','orange',106,164,22,8]]},
+{n:'Flower',p:[['rectangle','green',97,102,6,78],['circle','green',72,128,26,14],['circle','green',104,142,26,14],['circle','pink',87,26,26,26],['circle','pink',87,76,26,26],['circle','pink',58,51,26,26],['circle','pink',116,51,26,26],['circle','yellow',88,52,24,24]]},
+{n:'Owl',p:[['circle','brown',60,50,80,115],['triangle','brown',62,36,24,26],['triangle','brown',114,36,24,26],['circle','white',72,70,27,27],['circle','white',101,70,27,27],['circle','black',82,80,8,8],['circle','black',110,80,8,8],['triangle','orange',93,98,14,14,180],['circle','yellow',78,118,44,40],['rectangle','orange',76,162,18,8],['rectangle','orange',106,162,18,8]]}
+];
+const TG={square:[10,10,40,40],rectangle:[4,17,52,26],circle:[7,7,46,46],triangle:[7,9,46,42]};
+function draw(s,x,y,w,h,r,a){
+  const t=r?` transform="rotate(${r} ${x+w/2} ${y+h/2})"`:'';
+  if(s==='circle')return `<ellipse cx="${x+w/2}" cy="${y+h/2}" rx="${w/2}" ry="${h/2}" ${a}${t}/>`;
+  if(s==='triangle')return `<polygon points="${x+w/2},${y} ${x+w},${y+h} ${x},${y+h}" ${a}${t}/>`;
+  return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" ${a}${t}/>`;
+}
+const $=id=>document.getElementById(id);
+let S={fx:true,voice:true,hints:true,labels:true,pts:5,rate:1,theme:'auto'};
+try{Object.assign(S,JSON.parse(localStorage.getItem('shapebuilder')||'{}'))}catch(e){}
+function save(){try{localStorage.setItem('shapebuilder',JSON.stringify(S))}catch(e){}}
+
+// audio
+let ac;
+function tone(f,d,t,when,v){
+  if(!S.fx)return;
+  try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain();o.type=t||'sine';o.frequency.value=f;
+    o.connect(g);g.connect(ac.destination);const st=ac.currentTime+(when||0);
+    g.gain.setValueAtTime(v||.15,st);g.gain.exponentialRampToValueAtTime(.001,st+d);o.start(st);o.stop(st+d)}catch(e){}
+}
+function speak(t){
+  if(!S.voice||!('speechSynthesis' in window))return;
+  try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.rate=S.rate;speechSynthesis.speak(u)}catch(e){}
+}
+
+// game
+let gauge,order,fi,idx,locked,correct,justPlaced,running=false,waiting=false;
+const fig=()=>FIGS[order[fi%order.length]];
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function setGauge(){
+  $('fill').style.width=Math.max(gauge,0)+'%';
+  $('fill').style.background=`hsl(${Math.min(gauge,100)*1.2},80%,50%)`;
+  $('gnum').textContent=gauge+' / 100';
+}
+function renderStage(){
+  let h='';
+  fig().p.forEach((p,i)=>{
+    const [s,c,x,y,w,hh,r]=p;
+    if(i<idx){
+      h+=`<g${i===idx-1&&justPlaced?' class="pop"':''}>`+draw(s,x,y,w,hh,r,`fill="${COL[c]}" stroke="rgba(0,0,0,.35)" stroke-width="1.2"`)+'</g>';
+    }else{
+      h+=draw(s,x,y,w,hh,r,`fill="none" stroke="var(--ghost)" stroke-width="1.5" stroke-dasharray="4 3"${i===idx&&S.hints?' class="tgt"':''}`);
+    }
+  });
+  $('stage').innerHTML=h;
+  $('fname').textContent='Building: '+fig().n;
+}
+function newRound(){
+  const [s,c]=fig().p[idx];
+  correct=s+'|'+c;
+  const pool=[];SH.forEach(a=>Object.keys(COL).forEach(b=>{if(a+'|'+b!==correct)pool.push(a+'|'+b)}));
+  const opts=shuffle(shuffle(pool).slice(0,4).concat(correct));
+  $('tray').innerHTML=opts.map(k=>{
+    const [a,b]=k.split('|');
+    return `<button class="opt" data-k="${k}" aria-label="${b} ${a}"><svg viewBox="0 0 60 60">${draw(a,...TG[a],0,`fill="${COL[b]}" stroke="rgba(0,0,0,.35)" stroke-width="2"`)}</svg>${S.labels?`<span>${b} ${a}</span>`:''}</button>`;
+  }).join('');
+  $('ptxt').innerHTML=`Find the <span style="background:${COL[c]};color:${c==='yellow'||c==='white'?'#222':'#fff'};padding:0 8px;border-radius:8px">${c}</span> ${s}`;
+  renderStage();
+  speak(`Find the ${c} ${s}`);
+}
+function pick(btn){
+  if(locked||!running)return;
+  if(btn.dataset.k===correct){
+    gauge=Math.min(100,gauge+S.pts);idx++;justPlaced=true;setGauge();
+    tone(660,.12);tone(880,.18,'sine',.1);
+    if(gauge>=100){renderStage();return finish(true)}
+    if(idx>=fig().p.length){
+      renderStage();locked=true;waiting=false;setTimeout(()=>waiting=true,500);
+      $('ttxt').textContent='🎉 You built a '+fig().n+'!';$('toast').hidden=false;
+      [523,659,784].forEach((f,i)=>tone(f,.2,'triangle',i*.12));
+      speak('You built a '+fig().n.toLowerCase()+'!');
+      
+    }else newRound();
+  }else{
+    gauge--;setGauge();tone(150,.25,'sawtooth');
+    btn.classList.remove('shake');void btn.offsetWidth;btn.classList.add('shake');
+    if(gauge<=0)finish(false);
+  }
+}
+function finish(win){
+  running=false;locked=true;try{speechSynthesis.cancel()}catch(e){}
+  $('etitle').textContent=win?'🏆 You win!':'💥 Game over';
+  $('etext').textContent=win?'The gauge hit 100. Amazing building!':'The gauge hit 0. Give it another go!';
+  if(win)[523,659,784,1047].forEach((f,i)=>tone(f,.25,'triangle',i*.13));else[400,330,260,180].forEach((f,i)=>tone(f,.3,'sawtooth',i*.18,.1));
+  setTimeout(()=>$('end').hidden=false,win?700:400);
+}
+function startGame(){
+  gauge=1;order=shuffle(FIGS.map((_,i)=>i));fi=0;idx=0;locked=false;justPlaced=false;running=true;waiting=false;
+  $('toast').hidden=true;$('end').hidden=true;$('start').hidden=true;setGauge();newRound();
+}
+$('tray').addEventListener('click',e=>{const b=e.target.closest('.opt');if(b)pick(b)});
+function advance(){
+  $('toast').hidden=true;fi++;
+  if(fi>=order.length){const last=order[order.length-1];order=shuffle(FIGS.map((_,i)=>i));if(order[0]===last)[order[0],order[1]]=[order[1],order[0]];fi=0}
+  idx=0;justPlaced=false;locked=false;newRound();
+}
+document.addEventListener('click',e=>{if(!waiting||!running||!$('set').hidden||e.target.closest('#gear'))return;waiting=false;advance()});
+$('play').onclick=startGame;$('again').onclick=startGame;
+$('restart').onclick=()=>{$('set').hidden=true;startGame()};
+$('say').onclick=()=>{if(running){const [s,c]=fig().p[idx];const v=S.voice;S.voice=true;speak(`Find the ${c} ${s}`);S.voice=v}};
+
+// settings
+function applySettings(){
+  const r=document.documentElement;
+  if(S.theme==='auto')r.removeAttribute('data-theme');else r.dataset.theme=S.theme;
+  document.querySelectorAll('#set input[data-k]').forEach(i=>i.checked=!!S[i.dataset.k]);
+  document.querySelectorAll('#set .seg').forEach(g=>g.querySelectorAll('button').forEach(b=>b.classList.toggle('on',String(S[g.dataset.k])===b.dataset.v)));
+}
+$('gear').onclick=()=>$('set').hidden=false;
+$('close').onclick=()=>$('set').hidden=true;
+$('set').addEventListener('click',e=>{if(e.target===$('set'))$('set').hidden=true});
+$('set').addEventListener('change',e=>{const i=e.target.closest('input[data-k]');if(!i)return;S[i.dataset.k]=i.checked;save();applySettings();if(running&&!locked)newRound()});
+$('set').addEventListener('click',e=>{
+  const b=e.target.closest('.seg button');if(!b)return;
+  const k=b.parentNode.dataset.k,v=b.dataset.v;
+  S[k]=(k==='pts'||k==='rate')?parseFloat(v):v;save();applySettings();
+});
+applySettings();
+</script>
+</body>
+</html>
