@@ -251,6 +251,25 @@ class WebGameTests(unittest.TestCase):
             found.remove("index.html")
             self.assertEqual(listed, found, game["id"])
 
+    def test_vendor_patches_are_applied(self):
+        # scripts/vendor_web_games.py applies these after every download; a
+        # copy that still holds an original string was refreshed without it.
+        pages = {g["id"] for g in self.web_games() if "page" in g}
+        for table in sorted((ROOT / "scripts" / "vendor_patches").glob("*.json")):
+            self.assertIn(table.stem, pages, f"{table.name} patches no vendored game")
+            pairs = json.loads(table.read_text(encoding="utf-8"))["replace"]
+            d = ROOT / "www" / "games" / table.stem
+            texts = [p.read_text(encoding="utf-8") for p in d.rglob("*") if p.suffix in (".html", ".js")]
+            for old in pairs:
+                self.assertFalse([t for t in texts if old in t], f"{table.stem}: {old!r} is back")
+
+    def test_sofi_games_is_english(self):
+        d = ROOT / "www" / "games" / "sofi_games"
+        hebrew = re.compile("[֐-׿]")
+        for p in sorted(d.rglob("*")):
+            if p.suffix in (".html", ".js"):
+                self.assertIsNone(hebrew.search(p.read_text(encoding="utf-8")), p.name)
+
     def test_agent_types_every_file_it_serves(self):
         agent = (ROOT / "windows" / "arcade-agent.ps1").read_text(encoding="utf-8")
         typed = set(re.findall(r'"(\.[a-z0-9]+)"\s*=', agent))
