@@ -14,7 +14,7 @@ ALLOWED_CORES = {
     "snes9x_libretro.dll",
     "dosbox_pure_libretro.dll",
 }
-ALLOWED_MODES = {"solo", "host", "join"}
+ALLOWED_MODES = {"solo", "host", "join", "family"}
 DOS_CORE = "dosbox_pure_libretro.dll"
 ID_RE = re.compile(r"^[a-z0-9_]+$")
 
@@ -129,14 +129,14 @@ class CatalogTests(unittest.TestCase):
                 read_index = solo_args.index("--read")
                 self.assertTrue(read_index + 1 < len(solo_args))
                 self.assertEqual(solo_args[read_index + 1], "{root}/catalog/freeciv-local.serv")
-                # Verify freeciv_family entry has {hub} in args
-                freeciv_family = None
-                for g in load_catalog():
-                    if g["id"] == "freeciv_family":
-                        freeciv_family = g
-                        break
-                self.assertIsNotNone(freeciv_family)
-                self.assertIn("{hub}", freeciv_family["args"])
+                # The family game is a mode of this one tile, not a second tile
+                self.assertIn("family", game["modes"])
+                self.assertIn("{hub}", game["args_by_mode"]["family"])
+                self.assertNotIn("family", args_by_mode)
+                self.assertEqual(
+                    [g["id"] for g in load_catalog() if "freeciv" in g["id"]],
+                    ["freeciv"],
+                )
 
     def test_mode_labels(self):
         for game in load_catalog():
@@ -158,6 +158,27 @@ class CatalogTests(unittest.TestCase):
     def test_mindustry_saves_in_the_profile(self):
         mindustry = next(g for g in load_catalog() if g["id"] == "mindustry")
         self.assertTrue(mindustry["env"]["MINDUSTRY_DATA_DIR"].startswith("{saves}/"))
+
+    def test_mindustry_family_game_joins_through_the_hidden_mod(self):
+        mindustry = next(g for g in load_catalog() if g["id"] == "mindustry")
+        self.assertEqual(mindustry["modes"], ["solo", "family"])
+        family = mindustry["args_by_mode"]["family"]
+        join = "-Darcade.join={hub}:6567"
+        self.assertIn(join, family)
+        self.assertIn("-Darcade.name={player}", family)
+        # JVM properties must come before -jar or they are program arguments
+        self.assertLess(family.index(join), family.index("-jar"))
+        # the solo Play button never auto-joins
+        self.assertFalse([a for a in mindustry["args"] if "arcade.join" in a])
+        self.assertTrue(mindustry["install"])
+        for item in mindustry["install"]:
+            self.assertTrue(item["to"].startswith("{saves}/mindustry/mods/"))
+            mod = ROOT / item["from"]
+            meta = json.loads((mod / "mod.json").read_text(encoding="utf-8"))
+            # a listed mod is kicked by the server: "Incompatible mods"
+            self.assertIs(meta["hidden"], True)
+            self.assertEqual(meta["name"], Path(item["to"]).name)
+            self.assertTrue((mod / "scripts" / "main.js").is_file())
 
     def test_rom_paths_are_not_absolute(self):
         for game in load_catalog():

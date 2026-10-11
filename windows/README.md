@@ -48,5 +48,11 @@ Copies are newest-file-wins both ways, and nothing is ever deleted. If the same 
 **Play**: a private game on this PC (only this PC can connect); you have full control: /save NAME, /load NAME, /endgame.
 **Host**: a game on this PC that friends on the home network can join; the host has full control, friends are players. Needs the firewall rule install.ps1 adds when run as administrator.
 **Join a friend**: type the host PC's IP in the join box.
-**Freeciv: family game**: the one shared server on arcade-box (192.168.1.50:5556); everyone joins the same game.
+**Family game**: the one shared server on arcade-box (192.168.1.50:5556); everyone joins the same game.
 Saves go to the current persona's folder, saves\<persona>\freeciv; the server quits two minutes after the last player leaves.
+
+## Mindustry
+
+**Play**: single player.
+**Family game**: joins the one shared server on arcade-box (192.168.1.50:6567) as the current profile's name. Mindustry's desktop client has no connect-on-launch flag, so the launcher copies `catalog\mindustry\arcade-autojoin` into the profile's `mindustry\mods\` and starts the game with `-Darcade.join=<hub>:6567`; the mod (hidden, so the server's mod check ignores it) calls the join dialog's connect on load. Play never sets the property, so the mod does nothing there.
+Untested risk: per Mindustry's source, a crash during startup makes it disable mods (its `modcrashdisable` setting), which would stop Family game joining for that profile. If Family game opens Mindustry's main menu instead of the server, look there first.
