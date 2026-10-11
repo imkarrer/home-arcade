@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>משחקי סופי</title>
+  <title>Sofi's Games</title>
   <link rel="manifest" href="manifest.json">
   <style>
     * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
@@ -143,7 +143,7 @@
 <body>
 <div id="bg"></div>
 <div id="screen">
-  <div id="title">✨ משחקי סופי ✨</div>
+  <div id="title">✨ Sofi's Games ✨</div>
   <div id="cards"></div>
 </div>
 
@@ -167,11 +167,11 @@ setInterval(() => applyTimeTheme(bgEl), 60000);
 
 // ─── Games ────────────────────────────────────────────────────────
 const GAMES = [
-  { emoji:'🐶', name:'חיות',   url:'animals.html', bg:['#e8603c','#f5a623'], tilt:'-1.5deg', dur:'4.2s', delay:'0s'    },
-  { emoji:'🌊', name:'בועות',  url:'bubbles.html', bg:['#3498db','#9b59b6'], tilt:'1deg',   dur:'3.8s', delay:'0.5s'  },
-  { emoji:'🎹', name:'פסנתר',  url:'piano.html',   bg:['#27ae60','#f1c40f'], tilt:'-0.8deg',dur:'4.6s', delay:'0.25s' },
-  { emoji:'🎆', name:'זיקוקים', url:'fireworks.html', bg:['#8e44ad','#e74c3c'], tilt:'1.2deg', dur:'4.0s', delay:'0.75s' },
-  { emoji:'🖍️', name:'ציור',   url:'draw.html',      bg:['#16a085','#e91e8c'], tilt:'-1.2deg',dur:'4.4s', delay:'1s'    },
+  { emoji:'🐶', name:'Animals',   url:'animals.html', bg:['#e8603c','#f5a623'], tilt:'-1.5deg', dur:'4.2s', delay:'0s'    },
+  { emoji:'🌊', name:'Bubbles',  url:'bubbles.html', bg:['#3498db','#9b59b6'], tilt:'1deg',   dur:'3.8s', delay:'0.5s'  },
+  { emoji:'🎹', name:'Piano',  url:'piano.html',   bg:['#27ae60','#f1c40f'], tilt:'-0.8deg',dur:'4.6s', delay:'0.25s' },
+  { emoji:'🎆', name:'Fireworks', url:'fireworks.html', bg:['#8e44ad','#e74c3c'], tilt:'1.2deg', dur:'4.0s', delay:'0.75s' },
+  { emoji:'🖍️', name:'Drawing',   url:'draw.html',      bg:['#16a085','#e91e8c'], tilt:'-1.2deg',dur:'4.4s', delay:'1s'    },
 ];
 
 const cardsEl = document.getElementById('cards');

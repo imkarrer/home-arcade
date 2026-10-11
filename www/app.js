@@ -170,9 +170,17 @@ async function openWebGame(id) {
     location.hash = "#/";
     return;
   }
+  if (!game.online) {
+    // The profile's saves from the hub first, so a score made on another PC
+    // is here. Hub away: play with what this PC has.
+    await webGameEvent(id, "open").catch(() => {});
+    if (location.hash !== "#/play/" + id) return;
+  }
   closeWebGame(true);
   const layer = document.createElement("div");
   layer.id = "web-player";
+  layer.dataset.game = game.id;
+  if (game.online) layer.dataset.online = "1";
   const frame = document.createElement("iframe");
   frame.src = game.href;
   frame.title = game.title;
@@ -187,11 +195,42 @@ async function openWebGame(id) {
   frame.focus();
 }
 
+// Closing a game takes its last unsaved changes out of the frame and posts
+// them from here (the frame's own requests end with it), then sends the
+// profile back to the hub.
 function closeWebGame(keepFullscreen) {
   const layer = document.getElementById("web-player");
-  if (layer) layer.remove();
+  if (layer) {
+    let unsaved = null;
+    try {
+      const store = layer.querySelector("iframe").contentWindow.__arcadeStore;
+      if (store) unsaved = store.take();
+    } catch (e) { /* another site's page: nothing of ours in it */ }
+    layer.remove();
+    if (!layer.dataset.online) {
+      const id = layer.dataset.game;
+      (async () => {
+        if (unsaved) {
+          await api(unsaved.url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json; charset=utf-8" },
+            body: unsaved.body
+          });
+        }
+        await webGameEvent(id, "close");
+      })().catch(() => {});
+    }
+  }
   document.body.classList.remove("playing");
   if (!keepFullscreen && document.fullscreenElement) document.exitFullscreen().catch(() => {});
+}
+
+function webGameEvent(id, event) {
+  return api("/api/webgame", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id: id, event: event })
+  });
 }
 
 async function play(id, mode) {

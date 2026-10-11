@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>פסנתר</title>
+  <title>Piano</title>
   <link rel="manifest" href="manifest.json">
   <style>
     * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
@@ -128,12 +128,12 @@ function playNote(freq) {
 
 // ─── Keys config (pentatonic — always sounds nice) ─────────────
 const KEYS = [
-  { note:'דו',  freq:261.63, color:'#e74c3c', floats:['🎵','❤️'] },
-  { note:'רה',  freq:293.66, color:'#e67e22', floats:['🎶','🧡'] },
-  { note:'מי',  freq:329.63, color:'#f1c40f', floats:['♪','💛']  },
-  { note:'סול', freq:392.00, color:'#2ecc71', floats:['🎵','💚'] },
-  { note:'לה',  freq:440.00, color:'#3498db', floats:['🎶','💙'] },
-  { note:'דו׳', freq:523.25, color:'#9b59b6', floats:['♪','💜']  },
+  { note:'C',  freq:261.63, color:'#e74c3c', floats:['🎵','❤️'] },
+  { note:'D',  freq:293.66, color:'#e67e22', floats:['🎶','🧡'] },
+  { note:'E',  freq:329.63, color:'#f1c40f', floats:['♪','💛']  },
+  { note:'G', freq:392.00, color:'#2ecc71', floats:['🎵','💚'] },
+  { note:'A',  freq:440.00, color:'#3498db', floats:['🎶','💙'] },
+  { note:'C', freq:523.25, color:'#9b59b6', floats:['♪','💜']  },
 ];
 
 // ─── Build keys ────────────────────────────────────────────────

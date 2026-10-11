@@ -8,6 +8,11 @@ sync.ps1 pulls it to every PC, where arcade-agent.ps1 serves it. Only games
 whose license lets us copy them get a "page"; the rest use "url" and are
 played from the author's own site.
 
+A game with scripts/vendor_patches/<id>.json gets that file's "replace"
+pairs applied to its .html and .js after every download (Sofi's Games is
+Hebrew upstream; the arcade plays it in English). A pair that no longer
+matches stops the script, so a new upstream commit cannot quietly undo one.
+
 To move a game to a newer upstream commit, change the sha in its "source"
 and run this again (inside the flox environment, for python3):
 
@@ -48,6 +53,7 @@ def vendor(game: dict) -> None:
                 continue
             member.name = str(PurePosixPath(*parts))
             tar.extract(member, dest, filter="data")
+    patch(game["id"], dest)
     # A menu that finds its games by listing the folder (Mika's Playhouse)
     # asks for __games.json first; the agent serves files, not listings.
     pages = sorted(
@@ -60,6 +66,29 @@ def vendor(game: dict) -> None:
     if not page.is_file():
         raise SystemExit(f"{game['id']}: {game['page']} is not in {owner}/{repo}@{sha[:12]}")
     print(f" ok {len(pages)} pages", flush=True)
+
+
+def patch(game_id: str, dest: Path) -> None:
+    table = ROOT / "scripts" / "vendor_patches" / f"{game_id}.json"
+    if not table.is_file():
+        return
+    pairs = json.loads(table.read_text(encoding="utf-8"))["replace"]
+    # Longest first, so a short string never edits inside a longer one.
+    order = sorted(pairs, key=len, reverse=True)
+    used = set()
+    for path in sorted(p for p in dest.rglob("*") if p.suffix in (".html", ".js")):
+        text = path.read_text(encoding="utf-8")
+        new = text
+        for old in order:
+            if old in new:
+                new = new.replace(old, pairs[old])
+                used.add(old)
+        if new != text:
+            path.write_text(new, encoding="utf-8")
+    missing = [old for old in pairs if old not in used]
+    if missing:
+        raise SystemExit(f"{game_id}: {table.relative_to(ROOT)} no longer matches upstream: {missing}")
+    print(f" patched {len(used)} strings", flush=True)
 
 
 def main() -> None:

@@ -1,0 +1,33 @@
+{
+  "replace": {
+    "lang=\"he\" dir=\"rtl\"": "lang=\"en\" dir=\"ltr\"",
+    "<title>משחקי סופי</title>": "<title>Sofi's Games</title>",
+    "✨ משחקי סופי ✨": "✨ Sofi's Games ✨",
+    "<title>חיות ואקולות</title>": "<title>Animals and Sounds</title>",
+    "<title>בועות</title>": "<title>Bubbles</title>",
+    "<title>פסנתר</title>": "<title>Piano</title>",
+    "<title>זיקוקים</title>": "<title>Fireworks</title>",
+    "<title>ציור</title>": "<title>Drawing</title>",
+    "name:'חיות'": "name:'Animals'",
+    "name:'בועות'": "name:'Bubbles'",
+    "name:'פסנתר'": "name:'Piano'",
+    "name:'זיקוקים'": "name:'Fireworks'",
+    "name:'ציור'": "name:'Drawing'",
+    "name:'כלב'": "name:'Dog'",
+    "name:'חתול'": "name:'Cat'",
+    "name:'פרה'": "name:'Cow'",
+    "name:'ברווז'": "name:'Duck'",
+    "name:'אריה'": "name:'Lion'",
+    "name:'פיל'": "name:'Elephant'",
+    "name:'צפרדע'": "name:'Frog'",
+    "name:'חזיר'": "name:'Pig'",
+    "name:'תרנגול'": "name:'Rooster'",
+    "name:'חמור'": "name:'Donkey'",
+    "note:'דו'": "note:'C'",
+    "note:'רה'": "note:'D'",
+    "note:'מי'": "note:'E'",
+    "note:'סול'": "note:'G'",
+    "note:'לה'": "note:'A'",
+    "note:'דו׳'": "note:'C'"
+  }
+}

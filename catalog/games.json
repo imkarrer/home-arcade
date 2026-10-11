@@ -28,16 +28,6 @@
       "source": "https://github.com/RazHadas/sofi-games/tree/c39f3f54e69d76b00036080b2723165609cc7525"
     },
     {
-      "id": "toddler_games",
-      "title": "Balloons and Letters",
-      "kind": "web",
-      "shelf": "little",
-      "icon": "🎈",
-      "modes": ["solo"],
-      "url": "https://arun-ks.github.io/ToddlerGames/",
-      "source": "https://github.com/arun-ks/ToddlerGames"
-    },
-    {
       "id": "mario_kart_64",
       "title": "Mario Kart 64",
       "shelf": "racing",

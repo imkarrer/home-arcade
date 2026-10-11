@@ -9,11 +9,11 @@ animals.forEach(name => {
 const soundsJS = 'const SOUNDS = ' + JSON.stringify(sounds) + ';';
 
 const html = `<!DOCTYPE html>
-<html lang="he" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>חיות ואקולות</title>
+  <title>Animals and Sounds</title>
   <style>
     * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; user-select:none; }
     html,body { width:100%; height:100%; overflow:hidden; background:#1a1a2e; font-family:'Arial Rounded MT Bold',Arial,sans-serif; }
@@ -70,16 +70,16 @@ function pigOink() {
 }
 
 const ANIMALS = [
-  { name:'כלב',    emoji:'🐶', bg:['#e8603c','#f5a623'], sound:'dog',      floats:['🦴','🐾','💛'] },
-  { name:'חתול',   emoji:'🐱', bg:['#9b59b6','#e056fd'], sound:'cat',      floats:['🐟','🧶','💜'] },
-  { name:'פרה',    emoji:'🐮', bg:['#27ae60','#2ecc71'], sound:'cow',      floats:['🌿','🥛','💚'] },
-  { name:'ברווז',  emoji:'🦆', bg:['#3498db','#74b9ff'], sound:'duck',     floats:['💧','🌊','💙'] },
-  { name:'אריה',   emoji:'🦁', bg:['#e67e22','#f9ca24'], sound:'lion',     floats:['⭐','👑','🧡'] },
-  { name:'פיל',    emoji:'🐘', bg:['#636e72','#b2bec3'], sound:'elephant', floats:['🥜','🌴','🩶'] },
-  { name:'צפרדע',  emoji:'🐸', bg:['#00b894','#55efc4'], sound:'frog',     floats:['🪲','💧','🟢'] },
-  { name:'חזיר',   emoji:'🐷', bg:['#fd79a8','#e84393'], sound:'pig',      floats:['🌸','🍎','🩷'] },
-  { name:'תרנגול', emoji:'🐓', bg:['#fdcb6e','#e17055'], sound:'rooster',  floats:['🌞','🥚','⭐'] },
-  { name:'חמור',   emoji:'🫏', bg:['#a29bfe','#6c5ce7'], sound:'donkey',   floats:['🌾','🏔️','💜'] },
+  { name:'Dog',    emoji:'🐶', bg:['#e8603c','#f5a623'], sound:'dog',      floats:['🦴','🐾','💛'] },
+  { name:'Cat',   emoji:'🐱', bg:['#9b59b6','#e056fd'], sound:'cat',      floats:['🐟','🧶','💜'] },
+  { name:'Cow',    emoji:'🐮', bg:['#27ae60','#2ecc71'], sound:'cow',      floats:['🌿','🥛','💚'] },
+  { name:'Duck',  emoji:'🦆', bg:['#3498db','#74b9ff'], sound:'duck',     floats:['💧','🌊','💙'] },
+  { name:'Lion',   emoji:'🦁', bg:['#e67e22','#f9ca24'], sound:'lion',     floats:['⭐','👑','🧡'] },
+  { name:'Elephant',    emoji:'🐘', bg:['#636e72','#b2bec3'], sound:'elephant', floats:['🥜','🌴','🩶'] },
+  { name:'Frog',  emoji:'🐸', bg:['#00b894','#55efc4'], sound:'frog',     floats:['🪲','💧','🟢'] },
+  { name:'Pig',   emoji:'🐷', bg:['#fd79a8','#e84393'], sound:'pig',      floats:['🌸','🍎','🩷'] },
+  { name:'Rooster', emoji:'🐓', bg:['#fdcb6e','#e17055'], sound:'rooster',  floats:['🌞','🥚','⭐'] },
+  { name:'Donkey',   emoji:'🫏', bg:['#a29bfe','#6c5ce7'], sound:'donkey',   floats:['🌾','🏔️','💜'] },
 ];
 
 let current = 0, isDragging = false, startX = 0, dragX = 0;
