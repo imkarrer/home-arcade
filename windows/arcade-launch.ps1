@@ -111,6 +111,47 @@ function Resolve-ArcadeWeb($game) {
     return "/" + (($page.Substring(4) -split "/" | ForEach-Object { [Uri]::EscapeDataString($_) }) -join "/")
 }
 
+# A web game's saves (what it keeps in localStorage) are the profile's:
+# saves\<player>\web\<game>.json, which roams with the rest of the profile.
+# The file is the game's own JSON, kept as the page sent it and handed back
+# as base64, so nothing here has to understand it.
+function Get-ArcadeWebSaveFile([string]$playerId, [string]$gameId) {
+    if ($playerId -notmatch '^[a-z0-9-]{1,24}$' -or -not (Get-ArcadeRoster).Contains($playerId)) {
+        throw "There is no profile $playerId on this PC."
+    }
+    if ($gameId -notmatch '^[a-z0-9_]+$' -or -not (Test-Path -LiteralPath (Join-Path $root "www/games/$gameId") -PathType Container)) {
+        throw "There is no web game $gameId on this PC."
+    }
+    return Join-Path $root "saves/$playerId/web/$gameId.json"
+}
+
+function Save-ArcadeWebSaves([string]$playerId, [string]$gameId, [string]$json) {
+    $file = Get-ArcadeWebSaveFile $playerId $gameId
+    if ($json.Length -gt 1MB -or -not $json.TrimStart().StartsWith("{")) { throw "That is not a save for $gameId." }
+    New-Item -ItemType Directory -Force -Path (Split-Path $file) | Out-Null
+    [IO.File]::WriteAllText($file, $json, (New-Object Text.UTF8Encoding($false)))
+}
+
+# A game page as the agent serves it: the profile's saves and
+# www\arcade-saves.js go right after <head>, ahead of the game's own scripts.
+# With no profile on this PC the page goes out as it is.
+function Get-ArcadeWebPage([string]$file, [string]$gameId) {
+    $html = [IO.File]::ReadAllText($file, [Text.Encoding]::UTF8)
+    try {
+        $null = Get-ArcadePlayerSaves # this profile's folder, made if new
+        $player = [string](Get-ArcadePlayers).current
+        $saveFile = Get-ArcadeWebSaveFile $player $gameId
+    }
+    catch { return $html }
+    $json = if (Test-Path -LiteralPath $saveFile) { [IO.File]::ReadAllText($saveFile, [Text.Encoding]::UTF8) } else { "{}" }
+    $data = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($json))
+    $inject = "<script>window.__arcadeSaves={player:`"$player`",game:`"$gameId`",data:`"$data`"};</script><script src=`"/arcade-saves.js`"></script>"
+    $at = [regex]::Match($html, '<head(\s[^>]*)?>', 'IgnoreCase')
+    if (-not $at.Success) { $at = [regex]::Match($html, '<html(\s[^>]*)?>', 'IgnoreCase') }
+    $index = if ($at.Success) { $at.Index + $at.Length } else { 0 }
+    return $html.Insert($index, $inject)
+}
+
 function Get-ArcadeDosZip($game) {
     $rels = @()
     if ($game.id) { $rels += ("roms/dos/" + $game.id + ".zip") }

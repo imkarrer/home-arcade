@@ -270,6 +270,24 @@ class WebGameTests(unittest.TestCase):
             if p.suffix in (".html", ".js"):
                 self.assertIsNone(hebrew.search(p.read_text(encoding="utf-8")), p.name)
 
+    def test_saves_are_the_profiles(self):
+        # The agent puts arcade-saves.js ahead of each game page as it serves
+        # it; the copies on disk stay upstream's (plus vendor_patches).
+        shim = (ROOT / "www" / "arcade-saves.js").read_text(encoding="utf-8")
+        self.assertIn("window.__arcadeSaves", shim)
+        self.assertIn('defineProperty(window, "localStorage"', shim)
+        self.assertIn("/api/websave", shim)
+        agent = (ROOT / "windows" / "arcade-agent.ps1").read_text(encoding="utf-8")
+        launch = (ROOT / "windows" / "arcade-launch.ps1").read_text(encoding="utf-8")
+        for route in ("/api/websave", "/api/webgame", "Get-ArcadeWebPage"):
+            self.assertIn(route, agent)
+        self.assertIn('/arcade-saves.js', launch)
+        self.assertIn('"saves/$playerId/web/$gameId.json"', launch)
+        self.assertIn("/api/webgame", (ROOT / "www" / "app.js").read_text(encoding="utf-8"))
+        for p in (ROOT / "www" / "games").rglob("*"):
+            if p.suffix in (".html", ".js"):
+                self.assertNotIn("arcade-saves", p.read_text(encoding="utf-8"), p)
+
     def test_agent_types_every_file_it_serves(self):
         agent = (ROOT / "windows" / "arcade-agent.ps1").read_text(encoding="utf-8")
         typed = set(re.findall(r'"(\.[a-z0-9]+)"\s*=', agent))

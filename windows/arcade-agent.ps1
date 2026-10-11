@@ -42,6 +42,14 @@ function Send-File($res, [string]$path) {
     $res.Close()
 }
 
+function Send-Text($res, [string]$text, [string]$type) {
+    $bytes = (New-Object Text.UTF8Encoding($false)).GetBytes($text)
+    $res.ContentType = $type
+    $res.AddHeader("Cache-Control", "no-store")
+    $res.OutputStream.Write($bytes, 0, $bytes.Length)
+    $res.Close()
+}
+
 function Read-Body($req) {
     $reader = New-Object IO.StreamReader($req.InputStream, $req.ContentEncoding)
     try { return $reader.ReadToEnd() } finally { $reader.Close() }
@@ -119,6 +127,28 @@ while ($listen.IsListening) {
             Send-Json $res @{ ok = $true }
             continue
         }
+        # A web game's saves, from www\arcade-saves.js in its page. JSON only:
+        # a page on another site cannot send that here without a CORS
+        # preflight, and this agent never answers one, so it cannot write saves.
+        if ($path -eq "/api/websave" -and $req.HttpMethod -eq "POST") {
+            if ($req.ContentType -notlike "application/json*") { throw "Saves are sent as JSON." }
+            $reader = New-Object IO.StreamReader($req.InputStream, [Text.Encoding]::UTF8)
+            try { $json = $reader.ReadToEnd() } finally { $reader.Close() }
+            Save-ArcadeWebSaves ([string]$req.QueryString["player"]) ([string]$req.QueryString["game"]) $json
+            Send-Json $res @{ ok = $true }
+            continue
+        }
+        # Around a web game, what Start-ArcadeGame does around a program: the
+        # profile from the hub before it opens, back to the hub after it closes.
+        if ($path -eq "/api/webgame" -and $req.HttpMethod -eq "POST") {
+            $body = Read-Body $req | ConvertFrom-Json
+            $game = Find-Game ([string]$body.id)
+            if (-not $game -or $game.kind -ne "web") { throw "Unknown web game." }
+            if ($body.event -eq "open") { Update-ArcadePlayerSaves }
+            elseif ($body.event -eq "close") { Start-ArcadeSavePush ([string](Get-ArcadePlayers).current) 0 }
+            Send-Json $res @{ ok = $true }
+            continue
+        }
         # www\ is the kid UI and, under games\, the web games it opens. Their
         # paths arrive escaped ("Color%20Monster.html") and must stay inside
         # www\. A game file that is not there is a 404, not the kid UI.
@@ -138,6 +168,11 @@ while ($listen.IsListening) {
             $file = Join-Path $www "index.html"
         }
         if (-not (Test-Path $file)) { throw "UI files missing. Copy www into this arcade folder." }
+        if ($rel.StartsWith("games" + $sep) -and $file -match '\.html?$') {
+            # Never cached: the page carries whoever is playing.
+            Send-Text $res (Get-ArcadeWebPage $file $rel.Split($sep)[1]) "text/html; charset=utf-8"
+            continue
+        }
         Send-File $res $file
     }
     catch {
