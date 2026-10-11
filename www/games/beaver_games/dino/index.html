@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Dino</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="dino.js"></script>
+    <style>
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: -20px auto;
+        padding: 20px;
+        width: 200px;
+        display: block;
+      }
+      #start>div:first-child {
+        font-size: 20pt;
+        padding-bottom: 1em;
+      }
+      .keys {
+        font-family: monospace;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: absolute;
+        width: 100%;
+      }
+
+      h1 {
+        margin-bottom: 2em;
+      }
+      #difficulty {
+        float: right;
+      }
+      #landscape {
+        display: block;
+        margin: auto;
+      }
+      line {
+        stroke: #444;
+      }
+      .dinosaur {
+        fill: #F0A609;
+      }
+      .obstacle {
+        fill: #178F47;
+      }
+      .home {
+        fill: #D02E2B;
+      }
+    </style>
+  </head>
+
+  <body>
+    <select id="difficulty">
+      <option value=0>Easy</option>
+      <option value=1>Normal</option>
+      <option value=2>Hard</option>
+    </select>
+    <h1><a href="../">Beaver Games</a> : Dino</h1>
+
+    <div id="startDiv">
+      <button id="start">
+        <div>Start</div>
+        <div class="keys">&nbsp; Jump: &uarr;<br>
+        Crouch: &darr;</div>
+      </button>
+    </div>
+
+    <svg id="landscape" height="150" width="800" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="leftCurtain">
+          <stop offset="0%" style="stop-color: #fff; stop-opacity: 1"/>
+          <stop offset="100%" style="stop-color: #fff; stop-opacity: 0"/>
+        </linearGradient>
+        <linearGradient id="rightCurtain">
+          <stop offset="0%" style="stop-color: #fff; stop-opacity: 0"/>
+          <stop offset="100%" style="stop-color: #fff; stop-opacity: 1"/>
+        </linearGradient>
+      </defs>
+      <g id="dino"></g>
+      <g id="obstacles"></g>
+      <g id="ground"></g>
+      <line x1="60" y1="140.5" x2="720" y2="140.5"></line>
+      <rect x="-1" y="0" width="50" height="150"
+          style="fill: url(#leftCurtain);"></rect>
+      <rect x="751" y="0" width="50" height="150"
+          style="fill: url(#rightCurtain);"></rect>
+    </svg>
+
+    <audio id="crash" src="../common/crash.mp3"></audio>
+    <audio id="win" src="../common/win.mp3"></audio>
+
+  </body>
+</html>

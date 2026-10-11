@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Inglenook Shunting</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="shunting.js"></script>
+    <style>
+      #mainTable {
+        margin-left:auto;
+        margin-right:auto;
+      }
+      td {
+        vertical-align: top;
+      }
+      #centerCell {
+        border: 1px solid #888;
+        padding: 0;
+        position: relative;
+      }
+      #keyTable>tbody>tr>td:first-child {
+        text-align: right;
+        padding-right: 1em;
+      }
+      .goalCar {
+        color: #fff;
+        text-align: center;
+        margin: 5px 3em;
+        padding: 2ex;
+        border-radius: 5px;
+      }
+      #goalCars>div:last-child {
+        border-radius: 5px 5px 15px 15px;
+        padding: 3ex 2ex;
+      }
+      button.active, #leftButton:active, #rightButton:active {
+        opacity: 0.7;
+        border: 1px solid #000 !important;
+      }
+      #leftButton, #rightButton {
+        background-color: #f0d010;
+        position: absolute;
+        font-size: x-large;
+        bottom: 1ex;
+        border-radius: 5px;
+        border-style: outset;
+      }
+      #leftButton {
+        left: 40%;
+      }
+      #rightButton {
+        right: 40%;
+      }
+      #leftButton>div {
+        background-position: 0 0;
+      }
+      #rightButton>div {
+        background-position: -20px 0;
+      }
+      #centerCell button>div {
+        background-image: url('arrows.png');
+        display: inline-block;
+        height: 20px;
+        width: 20px;
+      }
+      #centerCell button {
+        border: 1px solid #fff;
+        border-radius: 5px;
+        color: #fff;
+        font-size: large;
+        height: 40px;
+        margin: 3px;
+        outline: none;
+        width: 50px;
+      }
+      #timer {
+        font-size: large;
+        margin-bottom: 0;
+      }
+
+      /* SVG elements */
+      svg {
+        margin-bottom: -4px;
+      }
+      .sleeper {
+        fill: #aaa;
+      }
+      .track {
+        fill: #666;
+      }
+      .buffer {
+        fill: #D02E2B;
+      }
+      .control {
+        fill: #f0d010;
+      }
+      .controlBG {
+        fill: #666;
+      }
+      .clickTarget {
+        opacity: 0;
+        cursor: pointer;
+      }
+      .uncoupler>path {
+        fill: #f0d010;
+        stroke:#888;
+        stroke-width: 0.2;
+      }
+      #trackPath {
+        display: none;  /* comment out this line to see the paths */
+        fill: none;
+        stroke: #00f;
+        stroke-width: 0.1px;
+      }
+      .carNumber {
+        fill: #fff;
+        font-size: 5px;
+        user-select: none;
+      }
+      #couplerGroup>line {
+        stroke: #666;
+        stroke-width: 2px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <h1><a href="../">Beaver Games</a> : Inglenook Shunting</h1>
+
+    <table id="mainTable">
+      <tbody>
+        <tr>
+          <td style="padding: 1ex; text-align: center;">
+            <h3>Build this train:</h3>
+            <div id="goalCars"></div>
+            <p><button onclick="reset(); this.blur()">New Train</button></p>
+            <p id="timer"></p>
+          </td>
+          <td id="centerCell">
+            <button id="leftButton"><div></div></button>
+            <button id="rightButton"><div></div></button>
+<svg
+    xmlns:xlink="http://www.w3.org/1999/xlink"
+    xmlns="http://www.w3.org/2000/svg"
+    width="685" height="525"
+    viewBox="0 0 137 105">
+  <defs>
+    <g id="straight">
+      <rect class="sleeper" width="8" height="1" x="0" y="0" />
+      <rect class="sleeper" width="8" height="2" x="0" y="3" />
+      <rect class="sleeper" width="8" height="2" x="0" y="7" />
+      <rect class="sleeper" width="8" height="2" x="0" y="11" />
+      <rect class="sleeper" width="8" height="1" x="0" y="15" />
+      <rect class="rail" width="1" height="16" x="6" y="0" />
+      <rect class="rail" width="1" height="16" x="1" y="0" />
+    </g>
+
+    <g id="curve">
+      <rect class="sleeper" width="8" height="1" x="0" y="19" />
+      <rect class="sleeper" width="8" height="2" x="1.748" y="14.591" transform="rotate(5.625)" />
+      <rect class="sleeper" width="8" height="2" x="3.104" y="10.001" transform="rotate(11.5)" />
+      <rect class="sleeper" width="8" height="2" x="3.911" y="5.366" transform="rotate(16.875)" />
+      <rect class="sleeper" width="8" height="1" x="4.304" y="1.64" transform="rotate(22.5)" />
+      <path class="rail" d="M 2,20 C 2,14.484 3.086,9.023 5.197,3.927 L 4.273,3.545 C 2.112,8.762 1,14.353 1,20 Z" />
+      <path class="rail" d="M 7,20 C 7,15.141 7.957,10.33 9.816,5.841 L 8.892,5.458 C 6.983,10.068 6,15.01 6,20 Z" />
+    </g>
+
+    <g id="buffer">
+      <rect class="sleeper" width="8" height="2" x="0" y="0" />
+      <rect class="sleeper" width="8" height="1" x="0" y="4" />
+      <rect class="rail" width="1" height="5" x="1" y="0" />
+      <rect class="rail" width="1" height="5" x="6" y="0" />
+      <path class="buffer" d="M 1,1 h 1 l 1,3 h -3 z" />
+      <path class="buffer" d="M 6,1 h 1 l 1,3 h -3 z" />
+    </g>
+
+    <g id="turnout">
+      <rect class="sleeper" width="8" height="1" x="0" y="31" />
+      <rect class="sleeper" width="12.5" height="3" x="0" y="27" />
+      <path class="sleeper" d="m 0,23 v 2 H 3.77 L 8.55,25.92 8.95,23.96 3.97,23 Z" />
+      <path class="sleeper" d="m 0,19 v 2 H 4.36 L 9.33,22.46 9.91,20.54 4.65,19 Z" />
+      <path class="sleeper" d="m 0,15 v 2 H 5.24 L 10.42,19.1 11.19,17.25 5.64,15 Z" />
+      <path class="sleeper" d="m 0,11 v 2 h 6.33 l 5.45,2.91 0.94,-1.76 L 6.84,11 Z" />
+      <path class="sleeper" d="m 0,7 v 2 h 7.8 l 5.7,3.85 1.12,-1.66 L 8.42,7 Z" />
+      <rect class="sleeper" width="8" height="2" x="0" y="3" />
+      <rect class="sleeper" width="8" height="1" x="0" y="0" />
+      <rect class="sleeper" width="8" height="2" x="10.332" y="-4.257" transform="rotate(39.375)" />
+      <rect class="sleeper" width="8" height="1" x="9.74" y="-8.485" transform="rotate(45)" />
+      <rect class="controlBG" width="4" height="2" x="8" y="27.5" ry="1" />
+      <circle class="control" cx="10" cy="28.5" r="1" />
+      <rect class="rail" width="1" height="32" x="1" y="0" />
+      <path class="rail pointStraight" d="" />
+      <path class="rail pointCurve" d="" />
+      <path class="rail" d="M 6,32 C 6,21.922 10.004,12.256 17.13,5.13 l 0.707,0.707 C 10.898,12.776 7.066,22.137 7,32 Z" />
+      <rect class="clickTarget" width="14.5" height="14" x="-1" y="20" rx="4" />
+    </g>
+
+    <g id="uncoupler">
+      <path d="m 80,27 1,-2 h -2 z" />
+      <path d="m 80,35 1,2 h -2 z" />
+    </g>
+  </defs>
+
+  <g id="trackGroup"></g>
+
+  <g id="couplerGroup"></g>
+
+  <g id="trainGroup"></g>
+
+  <g id="uncouplerControlGroup"></g>
+
+  <g id="trackPath">
+    <circle cx="48" cy="71" r="40" />
+    <circle cx="70.627" cy="48.372" r="40" />
+    <circle cx="104.568" cy="14.431" r="40" />
+    <path d="m 8,71 v 16 16" />
+    <path d="m 19.716,42.716 22.627,-22.628" />
+    <path d="m 70.627,8.372 h 16 16 16 1" />
+    <path d="m 48,31 h 16 16 16 16 16 1" />
+    <path d="m 104.568,54.431 h 16 1" />
+  </g>
+</svg>
+          </td>
+          <td style="width: 15em; padding: 1ex;">
+            <h2>Instructions</h2>
+            <p>Use the keyboard or the onscreen buttons to drive the locomotive.
+              Assemble the specified train.</p>
+            <p>For an additional challenge, leave all three blank cars in the
+              third siding.</p>
+            <h2>Keys</h2>
+            <table id="keyTable">
+              <tbody>
+                <tr><td>&larr;</td><td>Drive left</td></tr>
+                <tr><td>&rarr;</td><td>Drive right</td></tr>
+                <tr><td>1</td><td>Toggle 1st turnout</td></tr>
+                <tr><td>2</td><td>Toggle 2nd turnout</td></tr>
+                <tr><td>space</td><td>Activate decouplers</td></tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <audio id="click" src="click.mp3"></audio>
+    <audio id="couple" src="couple.mp3"></audio>
+    <audio id="uncouple" src="uncouple.mp3"></audio>
+    <audio id="win" src="win.mp3"></audio>
+  </body>
+</html>

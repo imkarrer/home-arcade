@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Chain Reaction</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="chain.js"></script>
+    <style>
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 170px auto;
+        padding: 20px;
+        width: 123px;
+        display: block;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: absolute;
+        width: 100%;
+      }
+
+      #board {
+        display: block;
+        margin: auto;
+      }
+      #options {
+        float: right;
+      }
+      rect.grid {
+        stroke: #888;
+        fill: none;
+      }
+      line.grid {
+        stroke: #444;
+      }
+      .body {
+        stroke: none;
+      }
+      .fuse {
+        fill: none;
+        stroke: #444;
+        stroke-width: 2;
+        stroke-linecap: round;
+      }
+      .cross {
+        stroke-width: 3;
+        stroke-linecap: round;
+      }
+      .bomb-player0 {
+        fill: #F0A609;
+        stroke: #2E5FFF;
+      }
+      .bomb-player1 {
+        fill: #2E5FFF;
+        stroke: #F0A609;
+      }
+      .cell-bg {
+        fill: #fff0;
+        stroke: none;
+        stroke-dasharray: 1;
+      }
+      .hover-player0:hover {
+        stroke: #F0A609;
+      }
+      .hover-player1:hover {
+        stroke: #2E5FFF;
+      }
+      #instructions {
+        margin: 4em 4em 0;
+        font-size: small;
+        font-style: italic;
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="options">
+      <select id="players">
+        <option value=1>1 Player</option>
+        <option value=2>2 Players</option>
+      </select>
+      <select id="difficulty" disabled>
+        <option value=0>Easy</option>
+        <option value=1>Normal</option>
+        <option value=2>Hard</option>
+      </select>
+    </div>
+    <h1><a href="../">Beaver Games</a> : Chain Reaction</h1>
+
+    <div id="startDiv">
+      <button id="start">
+        <div>Start</div>
+      </button>
+    </div>
+
+    <svg id="board" xmlns="http://www.w3.org/2000/svg">
+      <symbol id="bomb" height="50" width="50">
+        <path d="m 14.5,8.5 c 0,-7 0,-7 7,-7" class="fuse"/>
+        <rect x="7.5" y="7.5" height="6" width="14" rx="1.5" ry="1.5" class="body"/>
+        <circle cx="14.5" cy="25.5" r="14.5" class="body"/>
+        <line x1="9" y1="20" x2="20" y2="31" class="cross"/>
+        <line x1="20" y1="20" x2="9" y2="31" class="cross"/>
+      </symbol>
+      <g id="grid"></g>
+      <g id="matrix"></g>
+      <g id="explode"></g>
+    </svg>
+
+<p id="instructions">
+  Take turns piling bombs onto the squares.  Corner squares explode with two bombs,
+  edge squares explode with three bombs, center squares explode with four bombs.
+  Game ends when a player has no bombs left.
+</p>
+  </body>
+</html>
