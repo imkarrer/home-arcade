@@ -77,8 +77,8 @@ async function renderPlay() {
       const actions = document.createElement("div");
       actions.className = "actions";
       const modes = game.modes && game.modes.length ? game.modes : ["solo", "host", "join"];
-      const labels = { solo: "Play", host: "Host", join: "Join" };
-      const cls = { solo: "play", host: "host", join: "join" };
+      const labels = { solo: "Play", host: "Host", join: "Join", family: "Family game" };
+      const cls = { solo: "play", host: "host", join: "join", family: "join" };
       for (const mode of modes) {
         const btn = document.createElement("button");
         btn.className = cls[mode] || "play";

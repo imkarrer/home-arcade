@@ -1,0 +1,9 @@
+{
+  "name": "arcade-autojoin",
+  "displayName": "Arcade auto-join",
+  "author": "home-arcade",
+  "version": "1",
+  "hidden": true,
+  "minGameVersion": "146",
+  "description": "Joins the family server when the arcade launcher asks for it (-Darcade.join=host:port); does nothing otherwise."
+}
