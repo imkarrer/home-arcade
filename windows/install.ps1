@@ -58,6 +58,30 @@ function Install-RetroArch {
     return $existing
 }
 
+# Per-game controller remaps live in windows\remaps\<core library name>\<game id>.rmp.
+# RetroArch finds a game remap by the ROM's filename, so each one is copied once
+# per name catalog/games.json lists for that game (rom and rom_alts).
+function Install-ArcadeRemaps([string]$RemapDir, [string]$Local) {
+    $src = Join-Path $here "remaps"
+    if (-not (Test-Path $src)) { return }
+    $catalogPath = Join-Path $Local "catalog\games.json"
+    $games = if (Test-Path $catalogPath) { (Get-Content $catalogPath -Raw | ConvertFrom-Json).games } else { @() }
+    foreach ($rmp in Get-ChildItem -Path $src -Recurse -Filter "*.rmp") {
+        $coreDir = Join-Path $RemapDir $rmp.Directory.Name
+        New-Item -ItemType Directory -Force -Path $coreDir | Out-Null
+        $game = $games | Where-Object { $_.id -eq $rmp.BaseName } | Select-Object -First 1
+        $names = @($rmp.BaseName)
+        if ($game) {
+            $names += @(@($game.rom) + @($game.rom_alts) | Where-Object { $_ } |
+                ForEach-Object { [IO.Path]::GetFileNameWithoutExtension($_) })
+        }
+        foreach ($name in ($names | Select-Object -Unique)) {
+            Copy-Item $rmp.FullName (Join-Path $coreDir "$name.rmp") -Force
+        }
+        Write-Host "Controller remap: $($rmp.BaseName) -> $coreDir"
+    }
+}
+
 function New-HomeArcadeShortcut([string]$RaExe, [string]$PlayPs1) {
     $name = "Home Arcade.lnk"
     $startMenu = Join-Path $env:APPDATA "Microsoft\Windows\Start Menu\Programs\$name"
@@ -98,11 +122,13 @@ $cfgPath = Join-Path $Local "retroarch-arcade.cfg"
 $roms = Join-Path $Local "roms"
 $saves = Join-Path $Local "saves"
 $shaders = Join-Path $Local "shaders"
+$remaps = Join-Path (Split-Path $ra) "config\remaps"
 $cfgLines = @(
     "# Home Arcade spoke - content and cores come from arcade-box only.",
     "rgui_browser_directory = `"$roms`"",
     "savefile_directory = `"$saves`"",
     "video_shader_dir = `"$shaders`"",
+    "input_remapping_directory = `"$remaps`"",
     "core_updater_auto_backup = `"false`"",
     "network_on_demand_thumbnails = `"false`"",
     "automatically_add_content_to_playlist = `"false`"",
@@ -151,6 +177,8 @@ $station = [ordered]@{
     retroarchVersion = $RetroArchVersion
 }
 $station | ConvertTo-Json | Set-Content -Path $stationPath -Encoding utf8
+
+Install-ArcadeRemaps $remaps $Local
 
 New-HomeArcadeShortcut -RaExe $ra -PlayPs1 (Join-Path $Local "play.ps1")
 
